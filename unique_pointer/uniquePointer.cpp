@@ -1,4 +1,4 @@
-#include "unique_pointer.h"
+#include "uniquePointer.h"
 #include <iostream>
 #include <utility>
 template <class T>
@@ -67,5 +67,5 @@ Unique_ptr<T> make_unique(Args... args) {
 }
 int main() {
     auto p = make_unique<MyClass>(1, 2, 3);
-    std::cout << "a: " << p->a << std::endl;
+    std::cout << "a: " << (*p).a << std::endl;
 }

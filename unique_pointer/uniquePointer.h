@@ -1,0 +1,6 @@
+
+#ifndef STL_UNIQUEPOINTER_H
+#define STL_UNIQUEPOINTER_H
+
+
+#endif //STL_UNIQUEPOINTER_H
