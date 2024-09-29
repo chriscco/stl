@@ -1,7 +1,3 @@
-//
-// Created by Chris Cao on 9/28/24.
-//
-
 #ifndef STL_SHARED_POINTER_H
 #define STL_SHARED_POINTER_H
 
