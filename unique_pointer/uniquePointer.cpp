@@ -36,7 +36,7 @@ private:
     friend class Unique_ptr;
 
 public:
-    Unique_ptr() : my_ptr(nullptr) {}; // 默认构造函数
+    explicit Unique_ptr() : my_ptr(nullptr) {}; // 默认构造函数
     explicit Unique_ptr(T* p) noexcept : my_ptr(p) {}; // 自定义构造函数
 
     template<class U, class UDelete> requires (std::convertible_to<U *, T *>)
@@ -84,24 +84,27 @@ Unique_ptr<T> makeUnique(Args... args) {
     return Unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-class Animal {
+struct Animal {
 public:
     virtual void speak() = 0;
     virtual ~Animal() = default;
 };
 
-class Dog : Animal {
+struct Dog : Animal {
 public:
-    void speak() override { std::cout << "Dog!" << std::endl; }
+    virtual void speak() { std::cout << "Dog!" << std::endl; }
 };
 
-class Cat : Animal {
+struct Cat : Animal {
 public:
     void speak() override { std::cout << "Cat!" << std::endl; }
 };
 
 int main() {
     std::vector<Unique_ptr<Animal>> animals;
-    animals.push_back(makeUnique<Dog>());
-    animals.push_back(makeUnique<Cat>());
+    animals.emplace_back(makeUnique<Dog>());
+    animals.emplace_back(makeUnique<Cat>());
+    for (auto const &a: animals) {
+        a->speak();
+    }
 }
