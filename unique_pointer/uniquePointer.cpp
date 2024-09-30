@@ -39,13 +39,13 @@ public:
     Unique_ptr() : my_ptr(nullptr) {}; // 默认构造函数
     explicit Unique_ptr(T* p) noexcept : my_ptr(p) {}; // 自定义构造函数
 
-    Unique_ptr(Unique_ptr const& that) = delete;
-    Unique_ptr &operator=(Unique_ptr const &that) = delete;
-
     template<class U, class UDelete> requires (std::convertible_to<U *, T *>)
-    Unique_ptr(Unique_ptr<U, UDelete> &&that) noexcept : my_ptr(that.my_ptr) {
+    explicit Unique_ptr(Unique_ptr<U, UDelete> &&that) noexcept : my_ptr(that.my_ptr) {
         that.my_ptr = nullptr;
     }
+
+    Unique_ptr(Unique_ptr const& that) = delete;
+    Unique_ptr &operator=(Unique_ptr const &that) = delete;
 
     Unique_ptr(Unique_ptr &&that)  noexcept {
         /*
