@@ -43,7 +43,7 @@ public:
     Unique_ptr &operator=(Unique_ptr const &that) = delete;
 
     template<class U, class UDelete> requires (std::convertible_to<U *, T *>)
-    explicit Unique_ptr(Unique_ptr<U, UDelete> &&that) noexcept : my_ptr(that.my_ptr) {
+    Unique_ptr(Unique_ptr<U, UDelete> &&that) noexcept : my_ptr(that.my_ptr) {
         that.my_ptr = nullptr;
     }
 
@@ -92,12 +92,12 @@ public:
 
 class Dog : Animal {
 public:
-    void speak() override { std::cout << "wang!" << std::endl; }
+    void speak() override { std::cout << "Dog!" << std::endl; }
 };
 
 class Cat : Animal {
 public:
-    void speak() override { std::cout << "miao!" << std::endl; }
+    void speak() override { std::cout << "Cat!" << std::endl; }
 };
 
 int main() {
