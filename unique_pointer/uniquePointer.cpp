@@ -4,14 +4,16 @@
 #include <vector>
 #include <concepts>
 template <class T>
-struct DefaultDelete {
+class DefaultDelete {
+public:
     void operator()(T *p) const {
         delete p;
     }
 };
 
 template <>
-struct DefaultDelete<FILE> {
+class DefaultDelete<FILE> {
+public:
     void operator()(FILE *file) {
         fclose(file);
     }
@@ -28,27 +30,28 @@ template <class T, class Delete = DefaultDelete<T>>
 class Unique_ptr {
 private:
     T* my_ptr;
+    [[no_unique_address]] Delete aDelete;
+
     template<class U, class UDelete>
     friend class Unique_ptr;
 
 public:
     Unique_ptr() : my_ptr(nullptr) {}; // 默认构造函数
-    explicit Unique_ptr(T* p) : my_ptr(p) {}; // 自定义构造函数
+    explicit Unique_ptr(T* p) noexcept : my_ptr(p) {}; // 自定义构造函数
 
     Unique_ptr(Unique_ptr const& that) = delete;
     Unique_ptr &operator=(Unique_ptr const &that) = delete;
 
-    template<class U, class UDelete>
-    requires (std::convertible_to<U *, T *>)
-    explicit Unique_ptr(Unique_ptr<U, UDelete> &&that) {
-        my_ptr = std::exchange(that.my_ptr, nullptr);
+    template<class U, class UDelete> requires (std::convertible_to<U *, T *>)
+    explicit Unique_ptr(Unique_ptr<U, UDelete> &&that) noexcept : my_ptr(that.my_ptr) {
+        that.my_ptr = nullptr;
     }
 
     Unique_ptr(Unique_ptr &&that)  noexcept {
         /*
          * 等同于:
          * my_ptr = that.my_ptr;
-         * that.my_ptr = nullptr
+         * that.my_ptr = nullptr;
          */
         my_ptr = exchange(that.my_ptr, nullptr);
     }
@@ -66,7 +69,7 @@ public:
         if (my_ptr) Delete{}(my_ptr);
     }
 
-    T* get() const { return my_ptr; }
+    // T* get() const { return my_ptr; }
 
     T& operator*() const { return *my_ptr; }
 
@@ -77,8 +80,8 @@ template<class T, class Delete>
 class Unique_ptr<T[], Delete> : Unique_ptr<T, Delete> {};
 
 template<class T, class ...Args> // 支持多个参数传递
-Unique_ptr<T> make_unique(Args... args) {
-    return Unique_ptr<T>(new T(args...));
+Unique_ptr<T> makeUnique(Args... args) {
+    return Unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 class Animal {
@@ -99,6 +102,6 @@ public:
 
 int main() {
     std::vector<Unique_ptr<Animal>> animals;
-    animals.push_back(make_unique<Dog>());
-    animals.push_back(make_unique<Cat>());
+    animals.push_back(makeUnique<Dog>());
+    animals.push_back(makeUnique<Cat>());
 }
