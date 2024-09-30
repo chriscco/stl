@@ -2,7 +2,7 @@
 #include <vector>
 #include <concepts>
 template <class T>
-class DefaultDelete {
+class [[maybe_unused]] DefaultDelete {
 public:
     void operator()(T *p) const {
         delete p;
@@ -10,7 +10,7 @@ public:
 };
 
 template <>
-class DefaultDelete<FILE> {
+class [[maybe_unused]] DefaultDelete<FILE> {
 public:
     void operator()(FILE *file) {
         fclose(file);
@@ -28,7 +28,6 @@ template <class T, class Delete = DefaultDelete<T>>
 class Unique_ptr {
 private:
     T* my_ptr;
-    [[no_unique_address]] Delete aDelete;
 
     template<class U, class UDelete>
     friend class Unique_ptr;
@@ -100,8 +99,8 @@ public:
 
 int main() {
     std::vector<Unique_ptr<Animal>> animals;
-    animals.push_back(Unique_ptr<Animal>(makeUnique<Dog>()));
-    animals.push_back(Unique_ptr<Animal>(makeUnique<Cat>()));
+    animals.emplace_back(makeUnique<Dog>());
+    animals.emplace_back(makeUnique<Cat>());
     for (auto const &a: animals) {
         a->speak();
     }
