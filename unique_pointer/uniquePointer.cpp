@@ -82,7 +82,7 @@ Unique_ptr<T> makeUnique(Args... args) {
     return Unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-struct Animal {
+class Animal {
 public:
     virtual void speak() = 0;
     virtual ~Animal() = default;
@@ -90,18 +90,18 @@ public:
 
 struct Dog : Animal {
 public:
-    virtual void speak() { std::cout << "Dog!" << std::endl; }
+    void speak() override { std::cout << "Dog!" << std::endl; }
 };
 
-struct Cat : Animal {
+class Cat : public Animal {
 public:
     void speak() override { std::cout << "Cat!" << std::endl; }
 };
 
 int main() {
     std::vector<Unique_ptr<Animal>> animals;
-    animals.emplace_back(makeUnique<Dog>());
-    animals.emplace_back(makeUnique<Cat>());
+    animals.push_back(Unique_ptr<Animal>(makeUnique<Dog>()));
+    animals.push_back(Unique_ptr<Animal>(makeUnique<Cat>()));
     for (auto const &a: animals) {
         a->speak();
     }
