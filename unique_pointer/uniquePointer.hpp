@@ -66,7 +66,9 @@ public:
         if (my_ptr) Delete{}(my_ptr);
     }
 
-    // T* get() const { return my_ptr; }
+    T* get() const { return my_ptr; }
+
+    T* release() { return exchange(my_ptr, nullptr); }
 
     T& operator*() const { return *my_ptr; }
 
@@ -77,7 +79,8 @@ template<class T, class Delete>
 class Unique_ptr<T[], Delete> : Unique_ptr<T, Delete> {};
 
 template<class T, class ...Args> // 支持多个参数传递
-Unique_ptr<T> makeUnique(Args... args) {
+Unique_ptr<T> makeUnique(Args&&... args) {
+    std::remove_extent_t<T> a;
     return Unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
