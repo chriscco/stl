@@ -1,13 +1,7 @@
 #include <iostream>
 #include <atomic>
 #include <thread>
-template <class T>
-class DefaultDeleter {
-public:
-    void operator()(T *p) const {
-        delete p;
-    }
-};
+#include "../unique_pointer/uniquePointer.hpp"
 
 struct SpControlBlock {
 private:
@@ -56,7 +50,7 @@ private :
     friend class SharedPointer;
 
 public:
-    explicit SharedPointer(std::nullptr_t = nullptr) : control_b(nullptr) {};
+    explicit SharedPointer(std::nullptr_t = nullptr) : my_ptr(nullptr), control_b(nullptr) {};
 
     // 需要确保Y is_convertible_to T
     template<class Y>
@@ -66,7 +60,7 @@ public:
     // 需要确保Y is_convertible_to T
     template<class Y, class Deleter>
     explicit SharedPointer(Y *ptr, Deleter deleter)
-    : control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {};
+    : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {};
 
     SharedPointer(SharedPointer const& that) : my_ptr(that.my_ptr), control_b(that.control_b) {
         control_b->incref();
@@ -146,7 +140,7 @@ public:
      * 返回指针所管理的原始地址
      * @return
      */
-    [[nodiscard]] T* get() const { return my_ptr; }
+    [[nodiscard]] T* get() const noexcept { return my_ptr; }
 
     T* operator->() const { return my_ptr; }
 
@@ -250,7 +244,7 @@ int main() {
     std::cout << "p1.get(): " << p1.get() << std::endl;
     std::cout << "p2.get(): " << p2.get() << std::endl;
 
-    p2 = p1;
+    p2 = p1; // 拷贝赋值
 
     std:: cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
     std:: cout << "name: " << staticPointerCast<MyClassDerived>(p0).operator*().name << std::endl;
