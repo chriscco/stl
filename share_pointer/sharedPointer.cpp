@@ -1,14 +1,41 @@
 #include <iostream>
+#include <atomic>
 
 template <class T>
+class [[maybe_unused]] DefaultDeleter {
+public:
+    void operator()(T *p) const {
+        delete p;
+    }
+};
+
 struct SpControlBlock {
-    T* my_ptr;
-    int ref_count; // 保存一共有多指针共享当前的地址
-    explicit SpControlBlock(T* ptr) : my_ptr(ptr), ref_count(1) {};
+    std::atomic<long> ref_count; // 保存一共有多少指针共享当前的地址
+    explicit SpControlBlock(long) noexcept : ref_count(1) {};
 
     SpControlBlock(SpControlBlock&& that) = delete;
 
-    ~SpControlBlock() {
+    void incref() {
+        ref_count.fetch_add(1, std::memory_order_relaxed);
+    }
+    void decref() {
+        if (ref_count.fetch_sub(1, std::memory_order_relaxed) == 1) { // fetch_sub返回的是旧值
+            delete this;
+        }
+    }
+    virtual ~SpControlBlock() = default;
+};
+
+template <class T, class Deleter>
+struct SpControlBlockImpl : SpControlBlock {
+    T* my_ptr;
+    Deleter deleter;
+
+    explicit SpControlBlockImpl(T* ptr) : my_ptr(ptr){};
+
+    explicit SpControlBlockImpl(T* ptr_, Deleter deleter_) : my_ptr(ptr_), deleter(std::move(deleter_)){};
+
+    ~SpControlBlockImpl() override {
         delete my_ptr;
     }
 };
@@ -16,25 +43,32 @@ struct SpControlBlock {
 template <class T>
 class SharedPointer {
 private :
-    SpControlBlock<T>* control_b;
+    T* my_ptr;
+    SpControlBlock* control_b;
 public:
-    explicit SharedPointer(T *ptr) : control_b(new SpControlBlock(ptr)) {};
-    SharedPointer(SharedPointer const& that) : control_b(that.control_b) {
-        control_b->ref_count++;
+    explicit SharedPointer(std::nullptr_t = nullptr) : control_b(nullptr) {};
+
+    template<class Y>
+    explicit SharedPointer(Y *ptr = nullptr)
+    : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, DefaultDeleter<Y>>(ptr)) {};
+
+    template<class Y, class Deleter>
+    explicit SharedPointer(Y *ptr, Deleter deleter)
+    : control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {};
+
+    explicit SharedPointer(SharedPointer const& that) : control_b(that.control_b) {
+        control_b->incref();
     }
 
     ~SharedPointer() {
-        control_b->ref_count--;
-        if (control_b->ref_count == 0) {
-            delete control_b;
-        }
+        control_b->decref();
     }
 
-    T* get() const { return control_b->my_ptr; }
+    T* get() const { return my_ptr; }
 
-    T* operator->() const { return control_b->my_ptr; }
+    T* operator->() const { return my_ptr; }
 
-    T& operator*() const { return *control_b->my_ptr; }
+    T& operator*() const { return *(my_ptr); }
 };
 
 template<class T, class... Args>
@@ -55,7 +89,4 @@ public:
 };
 
 int main() {
-    SharedPointer p0 = makeShared<MyClass>(20, "kaka");
-    SharedPointer p1 = p0;
-    MyClass* raw = p0.get();
 }
