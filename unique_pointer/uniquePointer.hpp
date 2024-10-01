@@ -7,7 +7,7 @@
  * @tparam T
  */
 template <class T>
-struct [[maybe_unused]] DefaultDelete {
+struct DefaultDelete {
 public:
     void operator()(T *p) const {
         delete p;
@@ -18,7 +18,7 @@ public:
  * 对于FILE类型的特化函数
  */
 template <>
-struct [[maybe_unused]] DefaultDelete<FILE> {
+struct DefaultDelete<FILE> {
 public:
     void operator()(FILE *file) {
         fclose(file);
@@ -111,14 +111,14 @@ public:
      * get()返回指针
      * @return
      */
-    [[maybe_unused]] [[nodiscard]] T* get() const { return my_ptr; }
+    [[nodiscard]] T* get() const { return my_ptr; }
 
     /**
      * 等价于std::change()
      * 允许传入新的指针将my_ptr指向新的对象
      * @param p
      */
-    [[maybe_unused]] void reset(T *p = nullptr) {
+    void reset(T *p = nullptr) {
         if (my_ptr) Delete{}(my_ptr);
         my_ptr = p;
     }
@@ -126,11 +126,11 @@ public:
     /*
      * 防止特殊情况下对指针的两次释放
      */
-    [[maybe_unused]] T* release() { return exchange(my_ptr, nullptr); }
+    T* release() { return exchange(my_ptr, nullptr); }
 
-    [[maybe_unused]] T& operator*() const { return *my_ptr; }
+    T& operator*() const { return *my_ptr; }
 
-    [[maybe_unused]] T* operator->() const { return my_ptr; }
+    T* operator->() const { return my_ptr; }
 };
 
 /**
@@ -142,7 +142,7 @@ template<class T, class Delete>
 class Unique_ptr<T[], Delete> : Unique_ptr<T, Delete> {};
 
 /**
- * 支持多个参数传递, 包括非有界数组(vector)
+ * 支持多个参数传递, 包括非有界数组(vector...)
  * 该模板的第三个参数将默认为0, 使得缺少第三个参数依然可以运行
  * @tparam T
  * @tparam Args
