@@ -91,7 +91,7 @@ public:
     }
 
     /**
-     * 移动赋值构造函数
+     * 移动赋值
      * @param that
      * @return
      */
@@ -133,7 +133,7 @@ public:
      */
     T* release() { return exchange(my_ptr, nullptr); }
 
-    T& operator*() const { return *my_ptr; }
+    std::add_lvalue_reference_t<T> operator*() const { return *my_ptr; }
 
     T* operator->() const { return my_ptr; }
 };

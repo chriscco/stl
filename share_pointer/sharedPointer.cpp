@@ -5,15 +5,22 @@
 
 struct SpControlBlock {
 private:
-    std::atomic<long> ref_count; // 保存一共有多少指针共享当前的地址
+    /** 保存一共有多少指针共享当前的地址 */
+    std::atomic<long> ref_count;
 public:
     SpControlBlock() noexcept : ref_count(1) {};
 
     SpControlBlock(SpControlBlock&& that) = delete;
 
+    /**
+     * 这里使用@code{std::memory_order_relaxed}允许指令重排
+     */
     void incref() {
         ref_count.fetch_add(1, std::memory_order_relaxed);
     }
+    /**
+     * 这里使用@code{std::memory_order_relaxed}允许指令重排
+     */
     void decref() {
         if (ref_count.fetch_sub(1, std::memory_order_relaxed) == 1) { // fetch_sub返回的是旧值
             delete this;
@@ -67,7 +74,7 @@ public:
     }
 
     template<class Y>
-    SharedPointer(SharedPointer<Y> const& that, Y*ptr) : my_ptr(ptr), control_b(that.control_b) {
+    SharedPointer(SharedPointer<Y> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b) {
         control_b->incref();
     }
 
