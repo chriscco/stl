@@ -83,7 +83,9 @@ public:
 template<class T, class Delete>
 class Unique_ptr<T[], Delete> : Unique_ptr<T, Delete> {};
 
-template<class T, class ...Args> // 支持多个参数传递
+// 支持多个参数传递, 包括非有界数组(vector)
+// 该模板的第三个参数将默认为0, 使得缺少第三个参数依然可以运行
+template<class T, class ...Args, std::enable_if_t<!std::is_bounded_array_v<T>, int> = 0>
 Unique_ptr<T> makeUnique(Args&&... args) {
     std::remove_extent_t<T> a;
     return Unique_ptr<T>(new T(std::forward<Args>(args)...));
