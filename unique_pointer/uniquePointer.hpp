@@ -90,28 +90,3 @@ Unique_ptr<T> makeUnique(Args&&... args) {
     std::remove_extent_t<T> a;
     return Unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
-
-class Animal {
-public:
-    virtual void speak() = 0;
-    virtual ~Animal() = default;
-};
-
-struct Dog : Animal {
-public:
-    void speak() override { std::cout << "Dog!" << std::endl; }
-};
-
-class Cat : public Animal {
-public:
-    void speak() override { std::cout << "Cat!" << std::endl; }
-};
-
-int main() {
-    std::vector<Unique_ptr<Animal>> animals;
-    animals.emplace_back(makeUnique<Dog>());
-    animals.emplace_back(makeUnique<Cat>());
-    for (auto const &a: animals) {
-        a->speak();
-    }
-}
