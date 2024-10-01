@@ -11,7 +11,7 @@ public:
 
 struct SpControlBlock {
     std::atomic<long> ref_count; // 保存一共有多少指针共享当前的地址
-    explicit SpControlBlock(long) noexcept : ref_count(1) {};
+    SpControlBlock() noexcept : ref_count(1) {};
 
     SpControlBlock(SpControlBlock&& that) = delete;
 
@@ -48,15 +48,19 @@ private :
 public:
     explicit SharedPointer(std::nullptr_t = nullptr) : control_b(nullptr) {};
 
+    // 需要确保Y is_convertible_to T
     template<class Y>
     explicit SharedPointer(Y *ptr = nullptr)
     : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, DefaultDeleter<Y>>(ptr)) {};
 
+    // 需要确保Y is_convertible_to T
     template<class Y, class Deleter>
     explicit SharedPointer(Y *ptr, Deleter deleter)
     : control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {};
 
-    explicit SharedPointer(SharedPointer const& that) : control_b(that.control_b) {
+    // 需要确保Y is_convertible_to T
+    template<class Y>
+    explicit SharedPointer(SharedPointer<Y> const& that) : control_b(that.control_b) {
         control_b->incref();
     }
 
@@ -89,4 +93,9 @@ public:
 };
 
 int main() {
+    SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
+    SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
+    SharedPointer<MyClass> p2 = p0;
+    std::cout << &p0 << std::endl;
+    std::cout << &p2 << std::endl;
 }
