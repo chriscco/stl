@@ -68,6 +68,11 @@ public:
 
     T* get() const { return my_ptr; }
 
+    void reset(T *p = nullptr) {
+        if (my_ptr) Delete{}(my_ptr);
+        my_ptr = p;
+    }
+
     T* release() { return exchange(my_ptr, nullptr); }
 
     T& operator*() const { return *my_ptr; }
