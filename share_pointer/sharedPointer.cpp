@@ -36,7 +36,7 @@ struct SpControlBlockImpl : SpControlBlock {
     explicit SpControlBlockImpl(T* ptr_, Deleter deleter_) : my_ptr(ptr_), deleter(std::move(deleter_)){};
 
     ~SpControlBlockImpl() override {
-        delete my_ptr;
+        deleter(my_ptr);
     }
 };
 
@@ -45,6 +45,10 @@ class SharedPointer {
 private :
     T* my_ptr;
     SpControlBlock* control_b;
+
+    template<class>
+    friend class SharedPointer;
+
 public:
     explicit SharedPointer(std::nullptr_t = nullptr) : control_b(nullptr) {};
 
@@ -75,6 +79,12 @@ public:
 
     T* operator->() const { return my_ptr; }
 
+    /**
+     * std::add_lvalue_reference_t<T> 的作用是:
+     * 如果 T 不是引用类型, 它将返回 T&, 即 T 的左值引用类型
+     * 如果 T 已经是一个左值引用或右值引用, 它将返回原始类型 T 本身
+     * @return
+     */
     std::add_lvalue_reference_t<T> operator*() const { return *(my_ptr); }
 };
 
@@ -85,6 +95,8 @@ SharedPointer<T> makeShared(Args &&... args) {
 
 /**
  * 将T类型指针转换成U类型指针
+ * 用于在相关类型之间进行安全的转换
+ * 比如基本类型, 指针类型和类层次之间的转换
  * @tparam T
  * @tparam U
  * @param ptr
@@ -93,6 +105,46 @@ SharedPointer<T> makeShared(Args &&... args) {
 template<class T, class U>
 SharedPointer<T> staticPointerCast(SharedPointer<U> const &ptr) {
     return SharedPointer<T>(ptr, static_cast<T *>(ptr.get()));
+}
+
+/**
+ * 用于在有 const 或 volatile 限定符的类型之间进行转换, 以去掉这些限定符
+ * 只能添加或移除 const 或 volatile 限定符
+ * @tparam T
+ * @tparam U
+ * @param ptr
+ * @return
+ */
+template<class T, class U>
+SharedPointer<T> constPointerCast(SharedPointer<U> const &ptr) {
+    return SharedPointer<T>(ptr, const_cast<T *>(ptr.get()));
+}
+/**
+ * 用于低级别的强制转换, 通常在指针类型之间或将一个类型的指针转换为另一个不相关的类型
+ * 不进行任何类型检查
+ * @tparam T
+ * @tparam U
+ * @param ptr
+ * @return
+ */
+template<class T, class U>
+SharedPointer<T> reinterpretPointerCast(SharedPointer<U> const &ptr) {
+    return SharedPointer<T>(ptr, reinterpret_cast<T *>(ptr.get()));
+}
+
+/**
+ * 主要用于进行类层次之间的安全转换，特别是在多态情况下（即使用虚函数的类）。
+ * @tparam T
+ * @tparam U
+ * @param ptr
+ * @return
+ */
+template<class T, class U>
+SharedPointer<T> dynamicPointerCast(SharedPointer<U> const &ptr) {
+    T* p = dynamic_cast<T *>(ptr.get());
+    if (p) {
+        return SharedPointer<T>(ptr, p);
+    } else return nullptr;
 }
 
 class MyClass {
@@ -107,11 +159,25 @@ public:
     }
 };
 
+class MyClassDerived : public MyClass {
+    explicit MyClassDerived(int age, const char* name) : MyClass(age, name) {
+        std::cout << "MyClass Derived Construct\n";
+    };
+
+    ~MyClassDerived() {
+        std::cout << "MyClass Derived Destruct\n";
+    }
+};
+
+
 int main() {
     SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
     SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
-    std::cout << &p0 << std::endl;
-    std::cout << &p2 << std::endl;
+
+    std:: cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
+    std::cout << "p0: " << &p0 << std::endl;
+    std::cout << "p1: " << &p1 << std::endl;
+    std::cout << "p2: " << &p2 << std::endl;
     return 0;
 }
