@@ -77,6 +77,11 @@ public:
         control_b->incref();
     };
 
+    SharedPointer(SharedPointer&& that) noexcept {
+        that.control_b = nullptr;
+        that.my_ptr = nullptr;
+    }
+
     /**
      * 拷贝赋值, 如果声明SharedPointer类型名
      * 如: p1 = p0;
@@ -84,7 +89,7 @@ public:
      * @return
      */
     SharedPointer& operator=(SharedPointer const& that) {
-        if (this == that) return *this;
+        if (this == &that) return *this;
         control_b->decref();
         return *this;
     }
@@ -124,6 +129,10 @@ public:
         if (control_b) control_b->decref();
     }
 
+    /**
+     * 返回指针所管理的原始地址
+     * @return
+     */
     [[nodiscard]] T* get() const { return my_ptr; }
 
     T* operator->() const { return my_ptr; }
@@ -222,11 +231,17 @@ int main() {
     SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
     SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
+    p2 = p1;
 
     std:: cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
     std:: cout << "name: " << staticPointerCast<MyClassDerived>(p0).operator*().name << std::endl;
     std::cout << "p0: " << &p0 << std::endl;
     std::cout << "p1: " << &p1 << std::endl;
     std::cout << "p2: " << &p2 << std::endl;
+
+    std::cout << "-----------------" << std::endl;
+    std::cout << "p0.get(): " << p0.get() << std::endl;
+    std::cout << "p1.get(): " << p1.get() << std::endl;
+    std::cout << "p2.get(): " << p2.get() << std::endl;
     return 0;
 }
