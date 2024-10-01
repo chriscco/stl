@@ -2,7 +2,7 @@
 #include <atomic>
 #include <thread>
 template <class T>
-class [[maybe_unused]] DefaultDeleter {
+class DefaultDeleter {
 public:
     void operator()(T *p) const {
         delete p;
@@ -10,7 +10,9 @@ public:
 };
 
 struct SpControlBlock {
+private:
     std::atomic<long> ref_count; // 保存一共有多少指针共享当前的地址
+public:
     SpControlBlock() noexcept : ref_count(1) {};
 
     SpControlBlock(SpControlBlock&& that) = delete;
@@ -22,6 +24,10 @@ struct SpControlBlock {
         if (ref_count.fetch_sub(1, std::memory_order_relaxed) == 1) { // fetch_sub返回的是旧值
             delete this;
         }
+    }
+
+    long refcount() {
+        return ref_count.load();
     }
     virtual ~SpControlBlock() = default;
 };
@@ -71,8 +77,51 @@ public:
         control_b->incref();
     };
 
-    ~SharedPointer() {
+    /**
+     * 拷贝赋值, 如果声明SharedPointer类型名
+     * 如: p1 = p0;
+     * @param that
+     * @return
+     */
+    SharedPointer& operator=(SharedPointer const& that) {
+        if (this == that) return *this;
         control_b->decref();
+        return *this;
+    }
+
+    void reset() {
+        control_b->decref();
+        control_b = nullptr;
+    }
+
+    template<class Y>
+    void reset(Y* p) {
+        control_b->decref();
+        my_ptr = nullptr;
+        control_b = nullptr;
+        my_ptr = p;
+        control_b = new SpControlBlockImpl<Y, DefaultDeleter<Y>>(p);
+    }
+
+    template<class Y, class Deleter>
+    void reset(Y* p, Deleter deleter) {
+        control_b->decref();
+        my_ptr = nullptr;
+        control_b = nullptr;
+        my_ptr = p;
+        control_b = new SpControlBlockImpl<Y, Deleter>(p, std::move(deleter));
+    }
+
+    long use_count() {
+        return control_b ? control_b->refcount() : 0;
+    }
+
+    bool unique() {
+        return control_b == nullptr || control_b->refcount() == 1;
+    }
+
+    ~SharedPointer() {
+        if (control_b) control_b->decref();
     }
 
     [[nodiscard]] T* get() const { return my_ptr; }
@@ -169,13 +218,13 @@ class MyClassDerived : public MyClass {
     }
 };
 
-
 int main() {
     SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
     SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
 
     std:: cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
+    std:: cout << "name: " << staticPointerCast<MyClassDerived>(p0).operator*().name << std::endl;
     std::cout << "p0: " << &p0 << std::endl;
     std::cout << "p1: " << &p1 << std::endl;
     std::cout << "p2: " << &p2 << std::endl;
