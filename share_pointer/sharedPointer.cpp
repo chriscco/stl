@@ -1,6 +1,6 @@
 #include <iostream>
 #include <atomic>
-
+#include <thread>
 template <class T>
 class [[maybe_unused]] DefaultDeleter {
 public:
@@ -58,26 +58,41 @@ public:
     explicit SharedPointer(Y *ptr, Deleter deleter)
     : control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {};
 
-    // 需要确保Y is_convertible_to T
-    template<class Y>
-    explicit SharedPointer(SharedPointer<Y> const& that) : control_b(that.control_b) {
+    SharedPointer(SharedPointer const& that) : my_ptr(that.my_ptr), control_b(that.control_b) {
         control_b->incref();
     }
+
+    template<class Y, class U>
+    SharedPointer(SharedPointer<U> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
+        control_b->incref();
+    };
 
     ~SharedPointer() {
         control_b->decref();
     }
 
-    T* get() const { return my_ptr; }
+    [[nodiscard]] T* get() const { return my_ptr; }
 
     T* operator->() const { return my_ptr; }
 
-    T& operator*() const { return *(my_ptr); }
+    std::add_lvalue_reference_t<T> operator*() const { return *(my_ptr); }
 };
 
 template<class T, class... Args>
 SharedPointer<T> makeShared(Args &&... args) {
     return SharedPointer<T>(new T(std::forward<Args>(args)...));
+}
+
+/**
+ * 将T类型指针转换成U类型指针
+ * @tparam T
+ * @tparam U
+ * @param ptr
+ * @return
+ */
+template<class T, class U>
+SharedPointer<T> staticPointerCast(SharedPointer<U> const &ptr) {
+    return SharedPointer<T>(ptr, static_cast<T *>(ptr.get()));
 }
 
 class MyClass {
@@ -98,4 +113,5 @@ int main() {
     SharedPointer<MyClass> p2 = p0;
     std::cout << &p0 << std::endl;
     std::cout << &p2 << std::endl;
+    return 0;
 }
