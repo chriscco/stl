@@ -3,11 +3,11 @@
 #include <concepts>
 
 /**
- * 创建的指针会在超出作用域时自动调用 Deleter<T>::operator()删除这个指针
+ * 创建的指针会在超出作用域时自动调用 Deleterr<T>::operator()删除这个指针
  * @tparam T
  */
 template <class T>
-struct DefaultDelete {
+struct DefaultDeleter {
 public:
     void operator()(T *p) const {
         delete p;
@@ -18,7 +18,7 @@ public:
  * 对于FILE类型的特化函数
  */
 template <>
-struct DefaultDelete<FILE> {
+struct DefaultDeleter<FILE> {
 public:
     void operator()(FILE *file) {
         fclose(file);
@@ -44,14 +44,15 @@ T exchange(T& dest, U&& newVal) {
 /**
  * unique_ptr实现
  * @tparam T
- * @tparam Delete
+ * @tparam Deleter
  */
-template <class T, class Delete = DefaultDelete<T>>
+template <class T, class Deleter = DefaultDeleter<T>>
 class Unique_ptr {
 private:
     T* my_ptr;
+    Deleter* deleter;
 
-    template<class U, class UDelete>
+    template<class U, class UDeleter>
     friend class Unique_ptr;
 
 public:
@@ -61,11 +62,11 @@ public:
     /**
      * 移动构造函数, 同时兼容派生类对于基类的转换
      * @tparam U
-     * @tparam UDelete
+     * @tparam UDeleter
      * @param that
      */
-    template<class U, class UDelete> requires (std::convertible_to<U *, T *>)
-    explicit Unique_ptr(Unique_ptr<U, UDelete> &&that) noexcept : my_ptr(that.my_ptr) {
+    template<class U, class UDeleter> requires (std::convertible_to<U *, T *>)
+    explicit Unique_ptr(Unique_ptr<U, UDeleter> &&that) noexcept : my_ptr(that.my_ptr) {
         that.my_ptr = nullptr;
     }
 
@@ -96,7 +97,7 @@ public:
      */
     Unique_ptr& operator=(Unique_ptr&& that)  noexcept {
         if (this != &that) [[likely]]{ // 防止用instance移动赋值构造instance本身
-            if (my_ptr) Delete{}(my_ptr);
+            if (my_ptr) Deleter{}(my_ptr);
 
             my_ptr = exchange(that.my_ptr, nullptr);
         }
@@ -104,7 +105,7 @@ public:
     }
 
     ~Unique_ptr() {
-        if (my_ptr) Delete{}(my_ptr);
+        if (my_ptr) Deleter{}(my_ptr);
     }
 
     /**
@@ -113,13 +114,17 @@ public:
      */
     [[nodiscard]] T* get() const { return my_ptr; }
 
+    Deleter* get_deleter() const {
+        return deleter;
+    }
+
     /**
      * 等价于std::change()
      * 允许传入新的指针将my_ptr指向新的对象
      * @param p
      */
     void reset(T *p = nullptr) {
-        if (my_ptr) Delete{}(my_ptr);
+        if (my_ptr) Deleter{}(my_ptr);
         my_ptr = p;
     }
 
@@ -136,10 +141,10 @@ public:
 /**
  * 对于数组类型情况下的类模版,
  * @tparam T
- * @tparam Delete
+ * @tparam Deleter
  */
-template<class T, class Delete>
-class Unique_ptr<T[], Delete> : Unique_ptr<T, Delete> {};
+template<class T, class Deleter>
+class Unique_ptr<T[], Deleter> : Unique_ptr<T, Deleter> {};
 
 /**
  * 支持多个参数传递, 包括非有界数组(vector...)
