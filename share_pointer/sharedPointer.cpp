@@ -72,6 +72,11 @@ public:
         control_b->incref();
     }
 
+    template<class Y>
+    SharedPointer(SharedPointer<Y> const& that, Y*ptr) : my_ptr(ptr), control_b(that.control_b) {
+        control_b->incref();
+    }
+
     template<class Y, class U>
     SharedPointer(SharedPointer<U> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
         control_b->incref();
@@ -82,15 +87,23 @@ public:
         that.my_ptr = nullptr;
     }
 
+    template<class Y>
+    SharedPointer(SharedPointer<Y> const&& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
+        that.control_b = nullptr;
+        that.my_ptr = nullptr;
+    }
+
     /**
-     * 拷贝赋值, 如果声明SharedPointer类型名
+     * 拷贝赋值, 如果不声明SharedPointer类型名
      * 如: p1 = p0;
      * @param that
      * @return
      */
     SharedPointer& operator=(SharedPointer const& that) {
         if (this == &that) return *this;
-        control_b->decref();
+
+        my_ptr = that.my_ptr;
+        control_b = that.control_b;
         return *this;
     }
 
@@ -100,21 +113,25 @@ public:
     }
 
     template<class Y>
-    void reset(Y* p) {
+    void reset(Y* ptr) {
         control_b->decref();
         my_ptr = nullptr;
         control_b = nullptr;
-        my_ptr = p;
-        control_b = new SpControlBlockImpl<Y, DefaultDeleter<Y>>(p);
+        my_ptr = ptr;
+        control_b = new SpControlBlockImpl<Y, DefaultDeleter<Y>>(ptr);
     }
 
     template<class Y, class Deleter>
-    void reset(Y* p, Deleter deleter) {
+    void reset(Y* ptr, Deleter deleter) {
         control_b->decref();
         my_ptr = nullptr;
         control_b = nullptr;
-        my_ptr = p;
-        control_b = new SpControlBlockImpl<Y, Deleter>(p, std::move(deleter));
+        my_ptr = ptr;
+        control_b = new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter));
+    }
+
+    ~SharedPointer() {
+        if (control_b) control_b->decref();
     }
 
     long use_count() {
@@ -123,10 +140,6 @@ public:
 
     bool unique() {
         return control_b == nullptr || control_b->refcount() == 1;
-    }
-
-    ~SharedPointer() {
-        if (control_b) control_b->decref();
     }
 
     /**
@@ -231,6 +244,12 @@ int main() {
     SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
     SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
+
+    std::cout << "--------------------------------" << std::endl;
+    std::cout << "p0.get(): " << p0.get() << std::endl;
+    std::cout << "p1.get(): " << p1.get() << std::endl;
+    std::cout << "p2.get(): " << p2.get() << std::endl;
+
     p2 = p1;
 
     std:: cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
@@ -239,7 +258,7 @@ int main() {
     std::cout << "p1: " << &p1 << std::endl;
     std::cout << "p2: " << &p2 << std::endl;
 
-    std::cout << "-----------------" << std::endl;
+    std::cout << "--------------------------------" << std::endl;
     std::cout << "p0.get(): " << p0.get() << std::endl;
     std::cout << "p1.get(): " << p1.get() << std::endl;
     std::cout << "p2.get(): " << p2.get() << std::endl;
