@@ -66,18 +66,18 @@ public:
         if (my_ptr) Delete{}(my_ptr);
     }
 
-    T* get() const { return my_ptr; }
+    [[maybe_unused]] [[nodiscard]] T* get() const { return my_ptr; }
 
-    void reset(T *p = nullptr) {
+    [[maybe_unused]] void reset(T *p = nullptr) {
         if (my_ptr) Delete{}(my_ptr);
         my_ptr = p;
     }
 
-    T* release() { return exchange(my_ptr, nullptr); }
+    [[maybe_unused]] T* release() { return exchange(my_ptr, nullptr); }
 
-    T& operator*() const { return *my_ptr; }
+    [[maybe_unused]] T& operator*() const { return *my_ptr; }
 
-    T* operator->() const { return my_ptr; }
+    [[maybe_unused]] T* operator->() const { return my_ptr; }
 };
 
 template<class T, class Delete>
