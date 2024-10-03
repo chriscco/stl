@@ -61,19 +61,21 @@ private :
     explicit SharedPointer(T* ptr, SpControlBlock* controlB) : my_ptr(ptr), control_b(controlB) {};
 
 public:
-    explicit SharedPointer(std::nullptr_t = nullptr) : my_ptr(nullptr), control_b(nullptr) {};
+    explicit SharedPointer(std::nullptr_t = nullptr) : control_b(nullptr) {};
 
     // 需要确保Y is_convertible_to T
-    template<class Y>
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     explicit SharedPointer(Y *ptr)
     : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, DefaultDeleter<Y>>(ptr)) {
-
+        S_setEnableSharedFromThis(my_ptr, control_b);
     };
 
     // 需要确保Y is_convertible_to T
     template<class Y, class Deleter>
     explicit SharedPointer(Y *ptr, Deleter deleter)
-    : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {};
+    : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {
+        S_setEnableSharedFromThis(my_ptr, control_b);
+    };
 
     SharedPointer(SharedPointer const& that) : my_ptr(that.my_ptr), control_b(that.control_b) {
         control_b->incref();
@@ -97,7 +99,7 @@ public:
      */
     template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
-    : SharedPointer(ptr.release(), ptr.get_deleter()) {};
+    : SharedPointer(ptr.get(), ptr.get_deleter()) {};
 
     SharedPointer(SharedPointer&& that) noexcept {
         that.control_b = nullptr;
@@ -251,7 +253,7 @@ template <class T>
 struct EnableSharedFromThis {
 private:
     SpControlBlock* control_b;
-public:
+protected:
     EnableSharedFromThis() noexcept : control_b(nullptr) {};
 
     SharedPointer<T> shared_from_this() {
@@ -269,18 +271,21 @@ public:
     }
 
     template<class U>
-    inline friend void S_setEnableSharedFromThis(EnableSharedFromThis<U>*, SpControlBlock*);
+    inline friend void S_setEnableSharedFromThisOwner(EnableSharedFromThis<U>*, SpControlBlock*);
 };
 
 template<class U>
-inline void S_setEnableSharedFromThis(EnableSharedFromThis<U>* ptr, SpControlBlock* controlB) {
+inline void S_setEnableSharedFromThisOwner(EnableSharedFromThis<U>* ptr, SpControlBlock* controlB) {
     ptr->control_b = controlB;
 }
 
 template<class T, std::enable_if_t<std::is_base_of_v<EnableSharedFromThis<T>, T>, int> = 0>
-inline void S_setEnableSharedFromThis(EnableSharedFromThis<T>* ptr, SpControlBlock* controlB) {
-    S_setEnableSharedFromThis(static_cast<EnableSharedFromThis<T> *>(ptr), controlB);
+void S_setEnableSharedFromThis(EnableSharedFromThis<T>* ptr, SpControlBlock* controlB) {
+    S_setEnableSharedFromThisOwner(static_cast<EnableSharedFromThis<T> *>(ptr), controlB);
 }
+
+template<class T, std::enable_if_t<!std::is_base_of_v<EnableSharedFromThis<T>, T>, int> = 0>
+void S_setEnableSharedFromThis(EnableSharedFromThis<T>*, SpControlBlock*) {}
 
 class MyClass : public EnableSharedFromThis<MyClass> {
 public:
@@ -295,7 +300,8 @@ public:
     }
 
     ~MyClass() {
-        std::cout << "deconstruct:" << " name: " << name << std::endl;
+        std::cout << "deconstruct:" << " name: " << name <<
+                " this: " << this << std::endl;
     }
 };
 
