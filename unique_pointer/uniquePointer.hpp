@@ -131,7 +131,11 @@ public:
     /*
      * 防止特殊情况下对指针的两次释放
      */
-    T* release() { return exchange(my_ptr, nullptr); }
+    T* release() {
+        T* ptr = my_ptr;
+        my_ptr = nullptr;
+        return ptr;
+    }
 
     std::add_lvalue_reference_t<T> operator*() const { return *my_ptr; }
 
@@ -156,6 +160,5 @@ class UniquePointer<T[], Deleter> : UniquePointer<T, Deleter> {};
  */
 template<class T, class ...Args, std::enable_if_t<!std::is_bounded_array_v<T>, int> = 0>
 UniquePointer<T> makeUnique(Args&&... args) {
-    std::remove_extent_t<T> a;
     return UniquePointer<T>(new T(std::forward<Args>(args)...));
 }
