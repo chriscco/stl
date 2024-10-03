@@ -83,6 +83,16 @@ public:
         control_b->incref();
     };
 
+    /**
+     * 支持Unique_ptr转为SharedPointer
+     * @tparam Y
+     * @tparam Deleter
+     * @param ptr
+     */
+    template<class Y, class Deleter>
+    explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
+    : SharedPointer(ptr.get(), ptr.get_deleter()) {};
+
     SharedPointer(SharedPointer&& that) noexcept {
         that.control_b = nullptr;
         that.my_ptr = nullptr;
