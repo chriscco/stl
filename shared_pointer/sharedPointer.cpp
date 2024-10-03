@@ -287,15 +287,15 @@ public:
     int age;
     const char* name;
     explicit MyClass(int age_, const char* name_) : age(age_), name(name_) {
-        std::cout << "construct" << " name: " << name << std::endl;
+        std::cout << "construct:" << " name: " << name << std::endl;
     };
 
     void func() {
-       std::cout << "shared_from_this addr: " << shared_from_this().get() << std::endl;
+       std::cout << "shared_from_this addr: " << (void*)shared_from_this().get() << std::endl;
     }
 
     ~MyClass() {
-        std::cout << "deconstruct" << " name: " << name << std::endl;
+        std::cout << "deconstruct:" << " name: " << name << std::endl;
     }
 };
 
@@ -311,11 +311,11 @@ class MyClassDerived : public MyClass {
 
 int main() {
     std::cout << "demonstrating... " << std::endl;
-    SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
-    SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
+    SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "class_1");
+    SharedPointer<MyClass> p1(new MyClass(19, "class_2"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
-    UniquePointer<MyClass> pu = makeUnique<MyClass>(13, "dd");
-    // p2->func();
+    UniquePointer<MyClass> pu = makeUnique<MyClass>(13, "class_3");
+    p2->func();
 
     std::cout << "--------------------------------" << std::endl;
     std::cout << "p0.get(): " << p0.get() << std::endl;
