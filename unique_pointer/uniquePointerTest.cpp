@@ -17,7 +17,7 @@ public:
 };
 
 int main() {
-    std::vector<Unique_ptr<Animal>> animals;
+    std::vector<UniquePointer<Animal>> animals;
     animals.emplace_back(makeUnique<Dog>());
     animals.emplace_back(makeUnique<Cat>());
     for (auto const &a: animals) {
