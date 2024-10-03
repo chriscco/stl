@@ -1,6 +1,6 @@
 #include <iostream>
 #include <atomic>
-#include <thread>
+#include <memory>
 #include "../unique_pointer/uniquePointer.hpp"
 
 struct SpControlBlock {
@@ -122,6 +122,9 @@ public:
         return *this;
     }
 
+    template<class Y>
+    inline friend SharedPointer<Y> S_makeSharedFused(Y *ptr, SpControlBlock *controlB) noexcept;
+
     void reset() {
         control_b->decref();
         control_b = nullptr;
@@ -175,7 +178,7 @@ public:
 };
 
 template<class T>
-inline SharedPointer<T> S_makeSharedFused(T *ptr, SpControlBlock *controlB) {
+inline SharedPointer<T> S_makeSharedFused(T *ptr, SpControlBlock *controlB) noexcept {
     return SharedPointer<T>(ptr, controlB);
 }
 template<class T>
@@ -248,6 +251,7 @@ private:
     SpControlBlock* control_b;
 public:
     EnableSharedFromThis() noexcept : control_b(nullptr) {};
+
     SharedPointer<T> shared_from_this() {
         static_assert(std::is_base_of_v<EnableSharedFromThis, T>, "must be derived class");
         if (!control_b) throw std::bad_weak_ptr();
@@ -276,7 +280,7 @@ inline void S_setEnableSharedFromThis(EnableSharedFromThis<T>* ptr, SpControlBlo
     S_setEnableSharedFromThis(static_cast<EnableSharedFromThis<T> *>(ptr), controlB);
 }
 
-class MyClass : EnableSharedFromThis<MyClass> {
+class MyClass : public EnableSharedFromThis<MyClass> {
 public:
     int age;
     const char* name;
@@ -304,6 +308,7 @@ class MyClassDerived : public MyClass {
 };
 
 int main() {
+    std::cout << "demonstrating... " << std::endl;
     SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
     SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
