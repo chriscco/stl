@@ -56,6 +56,10 @@ private :
     template<class>
     friend class SharedPointer;
 
+    friend inline SharedPointer<T> allocateSpControlBlockOnce(T* ptr, SpControlBlock controlB){};
+
+    explicit SharedPointer(T* ptr, SpControlBlock* controlB) : my_ptr(ptr), control_b(controlB) {};
+
 public:
     explicit SharedPointer(std::nullptr_t = nullptr) : my_ptr(nullptr), control_b(nullptr) {};
 
@@ -91,7 +95,7 @@ public:
      */
     template<class Y, class Deleter>
     explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
-    : SharedPointer(ptr.get(), ptr.get_deleter()) {};
+    : SharedPointer(ptr.release(), ptr.get_deleter()) {};
 
     SharedPointer(SharedPointer&& that) noexcept {
         that.control_b = nullptr;
@@ -170,8 +174,17 @@ public:
     std::add_lvalue_reference_t<T> operator*() const { return *(my_ptr); }
 };
 
+template<class T>
+inline SharedPointer<T> S_makeSharedFused(T *ptr, SpControlBlock *controlB) {
+    return SharedPointer<T>(ptr, controlB);
+}
+template<class T>
+SharedPointer<T> makeSharedCounterOnce(T* ptr, SpControlBlock controlB) {
+    return SharedPointer<T>(ptr, controlB);
+}
+
 template<class T, class... Args>
-SharedPointer<T> makeShared(Args &&... args) {
+SharedPointer<T> makeShared(Args&&... args) {
     return SharedPointer<T>(new T(std::forward<Args>(args)...));
 }
 
@@ -229,12 +242,27 @@ SharedPointer<T> dynamicPointerCast(SharedPointer<U> const &ptr) {
     } else return nullptr;
 }
 
+template <class Derived>
+struct EnableSharedFromThis {
+    SpControlBlock* control_b;
+    EnableSharedFromThis() = default;
+    SharedPointer<Derived> shared_from_this() noexcept {
+        static_assert(std::is_base_of_v<EnableSharedFromThis, Derived>, "must be derived class");
+        return S_makeSharedFused(static_cast<Derived *> (this), control_b);
+    }
+
+    SharedPointer<std::add_const_t<Derived>> shared_from_this() const noexcept {
+        static_assert(std::is_base_of_v<EnableSharedFromThis, Derived>, "must be derived class");
+        return S_makeSharedFused(static_cast<std::add_const_t<Derived> *> (this), control_b);
+    }
+};
+
 class MyClass {
 public:
     int age;
     const char* name;
     explicit MyClass(int age_, const char* name_) : age(age_), name(name_) {
-        std::cout << "construct" << std::endl;
+        std::cout << "construct" << " name: " << name << std::endl;
     };
     ~MyClass() {
         std::cout << "deconstruct" << std::endl;
@@ -255,23 +283,27 @@ int main() {
     SharedPointer<MyClass> p0 = makeShared<MyClass>(12, "kaka");
     SharedPointer<MyClass> p1(new MyClass(19, "pp"), [](MyClass* p) { delete p; });
     SharedPointer<MyClass> p2 = p0;
+    UniquePointer<MyClass> pu = makeUnique<MyClass>(13, "dd");
 
     std::cout << "--------------------------------" << std::endl;
     std::cout << "p0.get(): " << p0.get() << std::endl;
     std::cout << "p1.get(): " << p1.get() << std::endl;
     std::cout << "p2.get(): " << p2.get() << std::endl;
+    std::cout << "pu.get(): " << pu.get() << std::endl;
 
     p2 = p1; // 拷贝赋值
 
-    std:: cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
-    std:: cout << "name: " << staticPointerCast<MyClassDerived>(p0).operator*().name << std::endl;
+    std::cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
+    std::cout << "name: " << staticPointerCast<MyClassDerived>(p0).operator*().name << std::endl;
     std::cout << "p0: " << &p0 << std::endl;
     std::cout << "p1: " << &p1 << std::endl;
     std::cout << "p2: " << &p2 << std::endl;
+    // std::cout << "pp: " << &pp << std::endl;
 
     std::cout << "--------------------------------" << std::endl;
     std::cout << "p0.get(): " << p0.get() << std::endl;
     std::cout << "p1.get(): " << p1.get() << std::endl;
     std::cout << "p2.get(): " << p2.get() << std::endl;
+    // std::cout << "pp.get(): " << pp.get() << std::endl;
     return 0;
 }
