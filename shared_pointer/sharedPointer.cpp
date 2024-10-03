@@ -36,7 +36,7 @@ public:
 template <class T, class Deleter>
 struct SpControlBlockImpl : SpControlBlock {
     T* my_ptr;
-    Deleter deleter;
+    [[no_unique_address]] Deleter deleter;
 
     explicit SpControlBlockImpl(T* ptr) : my_ptr(ptr){};
 
@@ -93,7 +93,7 @@ public:
      * @tparam Deleter
      * @param ptr
      */
-    template<class Y, class Deleter>
+    template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
     : SharedPointer(ptr.release(), ptr.get_deleter()) {};
 
@@ -242,28 +242,52 @@ SharedPointer<T> dynamicPointerCast(SharedPointer<U> const &ptr) {
     } else return nullptr;
 }
 
-template <class Derived>
+template <class T>
 struct EnableSharedFromThis {
+private:
     SpControlBlock* control_b;
-    EnableSharedFromThis() = default;
-    SharedPointer<Derived> shared_from_this() noexcept {
-        static_assert(std::is_base_of_v<EnableSharedFromThis, Derived>, "must be derived class");
-        return S_makeSharedFused(static_cast<Derived *> (this), control_b);
+public:
+    EnableSharedFromThis() noexcept : control_b(nullptr) {};
+    SharedPointer<T> shared_from_this() {
+        static_assert(std::is_base_of_v<EnableSharedFromThis, T>, "must be derived class");
+        if (!control_b) throw std::bad_weak_ptr();
+        control_b->incref();
+        return S_makeSharedFused(static_cast<T *> (this), control_b);
     }
 
-    SharedPointer<std::add_const_t<Derived>> shared_from_this() const noexcept {
-        static_assert(std::is_base_of_v<EnableSharedFromThis, Derived>, "must be derived class");
-        return S_makeSharedFused(static_cast<std::add_const_t<Derived> *> (this), control_b);
+    SharedPointer<T const> shared_from_this() const {
+        static_assert(std::is_base_of_v<EnableSharedFromThis, T>, "must be derived class");
+        if (!control_b) throw std::bad_weak_ptr();
+        control_b->incref();
+        return S_makeSharedFused(static_cast<T const *> (this), control_b);
     }
+
+    template<class U>
+    inline friend void S_setEnableSharedFromThis(EnableSharedFromThis<U>*, SpControlBlock*);
 };
 
-class MyClass {
+template<class U>
+inline void S_setEnableSharedFromThis(EnableSharedFromThis<U>* ptr, SpControlBlock* controlB) {
+    ptr->control_b = controlB;
+}
+
+template<class T, std::enable_if_t<std::is_base_of_v<EnableSharedFromThis<T>, T>, int> = 0>
+inline void S_setEnableSharedFromThis(EnableSharedFromThis<T>* ptr, SpControlBlock* controlB) {
+    S_setEnableSharedFromThis(static_cast<EnableSharedFromThis<T> *>(ptr), controlB);
+}
+
+class MyClass : EnableSharedFromThis<MyClass> {
 public:
     int age;
     const char* name;
     explicit MyClass(int age_, const char* name_) : age(age_), name(name_) {
         std::cout << "construct" << " name: " << name << std::endl;
     };
+
+    void func() {
+       std::cout << "shared_from_this addr: " << shared_from_this().get() << std::endl;
+    }
+
     ~MyClass() {
         std::cout << "deconstruct" << std::endl;
     }
@@ -285,6 +309,8 @@ int main() {
     SharedPointer<MyClass> p2 = p0;
     UniquePointer<MyClass> pu = makeUnique<MyClass>(13, "dd");
 
+    p0->func();
+
     std::cout << "--------------------------------" << std::endl;
     std::cout << "p0.get(): " << p0.get() << std::endl;
     std::cout << "p1.get(): " << p1.get() << std::endl;
@@ -292,7 +318,7 @@ int main() {
     std::cout << "pu.get(): " << pu.get() << std::endl;
 
     p2 = p1; // 拷贝赋值
-
+    // SharedPointer<MyClass> pp(std::move(pu));
     std::cout << "age: " << staticPointerCast<MyClassDerived>(p0).operator*().age << std::endl;
     std::cout << "name: " << staticPointerCast<MyClassDerived>(p0).operator*().name << std::endl;
     std::cout << "p0: " << &p0 << std::endl;
@@ -305,5 +331,6 @@ int main() {
     std::cout << "p1.get(): " << p1.get() << std::endl;
     std::cout << "p2.get(): " << p2.get() << std::endl;
     // std::cout << "pp.get(): " << pp.get() << std::endl;
+
     return 0;
 }
