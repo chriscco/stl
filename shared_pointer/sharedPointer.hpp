@@ -83,7 +83,7 @@ public:
         if (control_b) control_b->incref();
     }
     template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
-    explicit SharedPointer(SharedPointer<Y> const& that) noexcept
+    SharedPointer(SharedPointer<Y> const& that) noexcept
     : my_ptr(that.my_ptr), control_b(that.control_b) {
         if (control_b) control_b->incref();
     }
@@ -134,6 +134,17 @@ public:
      * @param that
      * @return
      */
+    SharedPointer& operator=(SharedPointer const& that) noexcept {
+        if (this == &that) return *this;
+        if (control_b) control_b->decref();
+
+        my_ptr = that.my_ptr;
+        control_b = that.control_b;
+        if (control_b) control_b->incref();
+        return *this;
+    }
+
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y *, T *>, int> = 0>
     SharedPointer& operator=(SharedPointer const& that) noexcept {
         if (this == &that) return *this;
         if (control_b) control_b->decref();
