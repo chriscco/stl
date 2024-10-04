@@ -56,7 +56,8 @@ private :
     template<class>
     friend class SharedPointer;
 
-    friend inline SharedPointer<T> makeSharedCounterOnce(T* ptr, SpControlBlock* controlB){};
+    [[maybe_unused]] friend inline SharedPointer<T>
+    makeSharedCounterOnce(T* ptr, SpControlBlock* controlB){};
 
     explicit SharedPointer(T* ptr, SpControlBlock* controlB) : my_ptr(ptr), control_b(controlB) {};
 
@@ -81,12 +82,12 @@ public:
         if (control_b) control_b->incref();
     }
 
-    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    template<class Y>
     SharedPointer(SharedPointer<Y> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b) {
         if (control_b) control_b->incref();
     }
 
-    template<class Y, class U, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    template<class Y, class U>
     SharedPointer(SharedPointer<U> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
         if (control_b) control_b->incref();
     };
@@ -106,13 +107,13 @@ public:
         that.my_ptr = nullptr;
     }
 
-    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    template<class Y>
     SharedPointer(SharedPointer<Y> const&& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
         that.control_b = nullptr;
         that.my_ptr = nullptr;
     }
 
-    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    template<class Y>
     inline friend SharedPointer<Y> S_makeSharedFused(Y *ptr, SpControlBlock *controlB) noexcept;
 
     /**
