@@ -46,7 +46,7 @@ int main() {
 
     /** 从UniquePointer转为SharedPointer, 完成后UniquePointer对象会被自动析构 */
     std::cout << "--------------------------------" << std::endl;
-    UniquePointer<MyClass, DefaultDeleter<MyClass>> unique = makeUnique<MyClass>(10, "class_4");
+    UniquePointer<MyClass> unique = makeUnique<MyClass>(10, "class_4");
     std::cout << "unique.get(): " << unique.get() << std::endl;
     SharedPointer<MyClass> shared(std::move(unique));
     std::cout << "unique.get(): " << unique.get() << std::endl;

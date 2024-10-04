@@ -3,6 +3,9 @@
 #include <memory>
 #include "../unique_pointer/uniquePointer.hpp"
 
+/**
+ * 针对共享指针数量的控制
+ */
 struct SpControlBlock {
 private:
     /** 保存一共有多少指针共享当前的地址 */
@@ -50,6 +53,7 @@ struct SpControlBlockImpl : SpControlBlock {
 template <class T>
 class SharedPointer {
 private :
+    /** SharedPointer和SpControlBlockImpl共同管理指针地址和控制块 */
     T *my_ptr;
     SpControlBlock* control_b;
 
@@ -122,7 +126,7 @@ public:
      * @param ptr
      */
     template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
-    explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
+    SharedPointer(UniquePointer<Y, Deleter>&& ptr)
             : SharedPointer(ptr.release(), ptr.get_deleter()) {};
 
     template<class Y>
