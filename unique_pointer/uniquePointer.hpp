@@ -3,7 +3,7 @@
 #include <concepts>
 
 /**
- * 创建的指针会在超出作用域时自动调用 Deleterr<T>::operator()删除这个指针
+ * 创建的指针会在超出作用域时自动调用 Deleter<T>::operator()删除这个指针
  * @tparam T
  */
 template <class T>
