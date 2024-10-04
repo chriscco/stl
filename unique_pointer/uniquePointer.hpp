@@ -132,7 +132,7 @@ public:
      * 防止特殊情况下对指针的两次释放
      */
     T* release() {
-        exchange(my_ptr, nullptr);
+        return exchange(my_ptr, nullptr);
     }
 
     std::add_lvalue_reference_t<T> operator*() const { return *my_ptr; }
