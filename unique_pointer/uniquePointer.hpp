@@ -114,7 +114,7 @@ public:
      */
     [[nodiscard]] T* get() const { return my_ptr; }
 
-    Deleter* get_deleter() const {
+    Deleter get_deleter() const {
         return deleter;
     }
 
