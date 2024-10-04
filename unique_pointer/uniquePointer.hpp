@@ -50,7 +50,7 @@ template <class T, class Deleter = DefaultDeleter<T>>
 class UniquePointer {
 private:
     T* my_ptr;
-    Deleter* deleter;
+    Deleter deleter;
 
     template<class U, class UDeleter>
     friend class UniquePointer;
