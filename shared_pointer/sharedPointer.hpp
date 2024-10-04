@@ -71,7 +71,7 @@ public:
     };
 
     // 需要确保Y is_convertible_to T
-    template<class Y, class Deleter>
+    template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     explicit SharedPointer(Y *ptr, Deleter deleter)
     : my_ptr(ptr), control_b(new SpControlBlockImpl<Y, Deleter>(ptr, std::move(deleter))) {
         S_setEnableSharedFromThis(my_ptr, control_b);
@@ -81,12 +81,12 @@ public:
         if (control_b) control_b->incref();
     }
 
-    template<class Y>
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     SharedPointer(SharedPointer<Y> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b) {
         if (control_b) control_b->incref();
     }
 
-    template<class Y, class U>
+    template<class Y, class U, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     SharedPointer(SharedPointer<U> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
         if (control_b) control_b->incref();
     };
@@ -106,13 +106,13 @@ public:
         that.my_ptr = nullptr;
     }
 
-    template<class Y>
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     SharedPointer(SharedPointer<Y> const&& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
         that.control_b = nullptr;
         that.my_ptr = nullptr;
     }
 
-    template<class Y>
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     inline friend SharedPointer<Y> S_makeSharedFused(Y *ptr, SpControlBlock *controlB) noexcept;
 
     /**
@@ -121,7 +121,7 @@ public:
      * @param that
      * @return
      */
-    SharedPointer& operator=(SharedPointer const& that) {
+    SharedPointer& operator=(SharedPointer const& that) noexcept {
         if (this == &that) return *this;
         if (control_b) control_b->decref();
 
@@ -131,13 +131,19 @@ public:
         return *this;
     }
 
-    SharedPointer& operator=(SharedPointer&& that) {
+    /**
+     * 移动构造的情况下只需要将对方的指针置为空
+     * @param that
+     * @return
+     */
+    SharedPointer& operator=(SharedPointer&& that) noexcept {
         if (this == &that) return *this;
         if (control_b) control_b->decref();
 
         my_ptr = that.my_ptr;
         control_b = that.control_b;
-        if (control_b) control_b->incref();
+        that.my_ptr = nullptr;
+        that.control_b = nullptr;
         return *this;
     }
 
@@ -147,7 +153,7 @@ public:
         control_b = nullptr;
     }
 
-    template<class Y>
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     void reset(Y* ptr) {
         if (control_b) control_b->decref();
         my_ptr = nullptr;
@@ -156,7 +162,7 @@ public:
         control_b = new SpControlBlockImpl<Y, DefaultDeleter<Y>>(ptr);
     }
 
-    template<class Y, class Deleter>
+    template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     void reset(Y* ptr, Deleter deleter) {
         if (control_b) control_b->decref();
         my_ptr = nullptr;
@@ -292,6 +298,12 @@ inline void S_setEnableSharedFromThisOwner(EnableSharedFromThis<U>* ptr, SpContr
     ptr->control_b = controlB;
 }
 
+/**
+ * @code{std::is_base_of_v<Base, Derived>}判断是否为派生类和基类的关系
+ * @tparam T
+ * @param ptr
+ * @param controlB
+ */
 template<class T, std::enable_if_t<std::is_base_of_v<EnableSharedFromThis<T>, T>, int> = 0>
 void S_setEnableSharedFromThis(EnableSharedFromThis<T>* ptr, SpControlBlock* controlB) {
     S_setEnableSharedFromThisOwner(static_cast<EnableSharedFromThis<T> *>(ptr), controlB);
