@@ -78,7 +78,13 @@ public:
         S_setEnableSharedFromThis(my_ptr, control_b);
     };
 
-    SharedPointer(SharedPointer const& that) : my_ptr(that.my_ptr), control_b(that.control_b) {
+    SharedPointer(SharedPointer const& that) noexcept
+    : my_ptr(that.my_ptr), control_b(that.control_b) {
+        if (control_b) control_b->incref();
+    }
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    explicit SharedPointer(SharedPointer<Y> const& that) noexcept
+    : my_ptr(that.my_ptr), control_b(that.control_b) {
         if (control_b) control_b->incref();
     }
 
@@ -92,17 +98,13 @@ public:
         if (control_b) control_b->incref();
     };
 
-    /**
-     * 支持Unique_ptr转为SharedPointer
-     * @tparam Y
-     * @tparam Deleter
-     * @param ptr
-     */
-    template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
-    explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
-    : SharedPointer(ptr.release(), ptr.get_deleter()) {};
+    SharedPointer(SharedPointer&& that) noexcept : my_ptr(that.my_ptr), control_b(that.control_b){
+        that.control_b = nullptr;
+        that.my_ptr = nullptr;
+    }
 
-    SharedPointer(SharedPointer&& that) noexcept {
+    template<class Y, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    explicit SharedPointer(SharedPointer<Y>&& that) noexcept : my_ptr(that.my_ptr), control_b(that.control_b) {
         that.control_b = nullptr;
         that.my_ptr = nullptr;
     }
@@ -112,6 +114,16 @@ public:
         that.control_b = nullptr;
         that.my_ptr = nullptr;
     }
+
+    /**
+     * 支持Unique_ptr转为SharedPointer
+     * @tparam Y
+     * @tparam Deleter
+     * @param ptr
+     */
+    template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
+    explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
+            : SharedPointer(ptr.release(), ptr.get_deleter()) {};
 
     template<class Y>
     inline friend SharedPointer<Y> S_makeSharedFused(Y *ptr, SpControlBlock *controlB) noexcept;
