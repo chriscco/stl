@@ -48,7 +48,7 @@ int main() {
     std::cout << "--------------------------------" << std::endl;
     UniquePointer<MyClass> unique = makeUnique<MyClass>(10, "class_4");
     std::cout << "unique.get(): " << unique.get() << std::endl;
-    SharedPointer<MyClass> shared(std::move(unique));
+    SharedPointer<MyClass> shared(UniquePointer<MyClass>(std::move(unique)));
     std::cout << "unique.get(): " << unique.get() << std::endl;
     std::cout << "shared.get(): " << shared.get() << std::endl;
     std::cout << "shared.use_count(): " << shared.use_count() << std::endl;

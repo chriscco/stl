@@ -126,7 +126,7 @@ public:
      * @param ptr
      */
     template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
-    SharedPointer(UniquePointer<Y, Deleter>&& ptr)
+    explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
             : SharedPointer(ptr.release(), ptr.get_deleter()) {};
 
     template<class Y>
