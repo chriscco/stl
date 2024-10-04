@@ -78,17 +78,17 @@ public:
     };
 
     SharedPointer(SharedPointer const& that) : my_ptr(that.my_ptr), control_b(that.control_b) {
-        control_b->incref();
+        if (control_b) control_b->incref();
     }
 
     template<class Y>
     SharedPointer(SharedPointer<Y> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b) {
-        control_b->incref();
+        if (control_b) control_b->incref();
     }
 
     template<class Y, class U>
     SharedPointer(SharedPointer<U> const& that, Y* ptr) : my_ptr(ptr), control_b(that.control_b){
-        control_b->incref();
+        if (control_b) control_b->incref();
     };
 
     /**
@@ -112,6 +112,9 @@ public:
         that.my_ptr = nullptr;
     }
 
+    template<class Y>
+    inline friend SharedPointer<Y> S_makeSharedFused(Y *ptr, SpControlBlock *controlB) noexcept;
+
     /**
      * 拷贝赋值, 如果不声明SharedPointer类型名
      * 如: p1 = p0;
@@ -120,23 +123,33 @@ public:
      */
     SharedPointer& operator=(SharedPointer const& that) {
         if (this == &that) return *this;
+        if (control_b) control_b->decref();
 
         my_ptr = that.my_ptr;
         control_b = that.control_b;
+        if (control_b) control_b->incref();
         return *this;
     }
 
-    template<class Y>
-    inline friend SharedPointer<Y> S_makeSharedFused(Y *ptr, SpControlBlock *controlB) noexcept;
+    SharedPointer& operator=(SharedPointer&& that) {
+        if (this == &that) return *this;
+        if (control_b) control_b->decref();
+
+        my_ptr = that.my_ptr;
+        control_b = that.control_b;
+        if (control_b) control_b->incref();
+        return *this;
+    }
 
     void reset() {
-        control_b->decref();
+        if (control_b) control_b->decref();
+        control_b = nullptr;
         control_b = nullptr;
     }
 
     template<class Y>
     void reset(Y* ptr) {
-        control_b->decref();
+        if (control_b) control_b->decref();
         my_ptr = nullptr;
         control_b = nullptr;
         my_ptr = ptr;
@@ -145,7 +158,7 @@ public:
 
     template<class Y, class Deleter>
     void reset(Y* ptr, Deleter deleter) {
-        control_b->decref();
+        if (control_b) control_b->decref();
         my_ptr = nullptr;
         control_b = nullptr;
         my_ptr = ptr;
