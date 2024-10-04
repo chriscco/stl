@@ -1,3 +1,2 @@
-class function {
+#include <iostream>
 
-};
