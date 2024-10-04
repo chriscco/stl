@@ -99,7 +99,7 @@ public:
      */
     template<class Y, class Deleter, std::enable_if_t<std::is_convertible_v<Y*, T*>, int> = 0>
     explicit SharedPointer(UniquePointer<Y, Deleter>&& ptr)
-    : SharedPointer(ptr.get(), ptr.get_deleter()) {};
+    : SharedPointer(ptr.release(), ptr.get_deleter()) {};
 
     SharedPointer(SharedPointer&& that) noexcept {
         that.control_b = nullptr;
