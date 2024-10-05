@@ -1,4 +1,5 @@
 #include <vector>
+#include <cstring>
 #ifndef STL_VECTORS_HPP
 #define STL_VECTORS_HPP
 
@@ -8,19 +9,57 @@ private:
     size_t m_size;
 
 public:
+    Vectors() : m_data(nullptr), m_size(0) {};
+
     explicit Vectors(size_t size) {
-        m_data = new int[size];
+        m_data = new int[size]{};
         m_size = size;
     }
-    size_t size() const {
+
+    /**
+     * 深拷贝防止析构m_data两次
+     * @param that
+     */
+    Vectors(Vectors const& that) {
+        m_data = new int[that.m_size];
+        m_size = that.m_size;
+        memcpy(m_data, that.m_data, m_size * sizeof(int));
+    }
+
+    void clear() {
+        resize(0);
+    }
+
+    void resize(size_t size) {
+        auto old_data = m_data;
+        auto old_size = m_size;
+
+        if (size == 0) {
+            m_data = nullptr;
+            m_size = 0;
+        } else {
+            m_data = new int[size]{};
+            m_size = size;
+            if (old_data) {
+                memcpy(m_data, old_data, std::min(size, old_size) * sizeof(int));
+                delete[] old_data;
+            }
+        }
+    }
+
+    [[nodiscard]] size_t size() const {
         return m_size;
     }
 
-    int operator[](size_t i) {
+    int const& operator[](size_t i) const {
         return m_data[i];
     }
 
-    ~Vectors() { delete m_data; }
+    int& operator[](size_t i) {
+        return m_data[i];
+    }
+
+    ~Vectors() { delete[] m_data; }
 };
 
 
