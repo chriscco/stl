@@ -26,6 +26,14 @@ int main() {
     bar[0] = 10000;
     printVector(bar);
     std::cout << "--------------------" << std::endl;
+
+    Vectors car;
+    car = bar;
+    car.resize(4);
+    car[3] = 200;
+    printVector(car);
+    std::cout << "--------------------" << std::endl;
+
     arr.resize(0);
     return 0;
 }
