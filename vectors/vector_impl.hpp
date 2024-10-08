@@ -167,6 +167,22 @@ public:
         resize(m_size - diff);
     }
 
+    void erase(int const* it) {
+        size_t i = it - m_data;
+        for (size_t j = i + 1; j < m_size; j++) {
+            m_data[j - 1] = std::move(m_data[j]);
+        }
+        resize(m_size - 1);
+    }
+
+    void erase(int const* first, int const* last) {
+        size_t diff = last - first;
+        for (size_t j = last - m_data; j < m_size; j++) {
+            m_data[j - diff] = std::move(m_data[j]);
+        }
+        resize(m_size - diff);
+    }
+
     [[nodiscard]] size_t size() const {
         return m_size;
     }
