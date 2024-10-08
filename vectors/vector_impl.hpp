@@ -113,6 +113,21 @@ public:
         back() = val;
     }
 
+    void erase(size_t i) {
+        for (size_t j = i + 1; j < m_size; j++) {
+            m_data[j - 1] = std::move(m_data[j]);
+        }
+        resize(m_size - 1);
+    }
+
+    void erase(size_t beg, size_t end) {
+        size_t diff = end - beg;
+        for (size_t j = end; j < m_size; j++) {
+            m_data[j - diff] = std::move(m_data[j]);
+        }
+        resize(m_size - diff);
+    }
+
     [[nodiscard]] size_t size() const {
         return m_size;
     }
