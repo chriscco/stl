@@ -131,6 +131,22 @@ public:
         return at(m_size - 1);
     }
 
+    int* begin() {
+        return m_data;
+    }
+
+    [[nodiscard]] int const * begin() const {
+        return m_data;
+    }
+
+    int* end() {
+        return m_data + m_size;
+    }
+
+    [[nodiscard]] int const *end() const {
+        return m_data + m_size;
+    }
+
     void push_back(int val) {
         resize(size() + 1);
         back() = val;
@@ -153,6 +169,10 @@ public:
 
     [[nodiscard]] size_t size() const {
         return m_size;
+    }
+
+    [[nodiscard]] size_t capacity() const {
+        return m_capacity;
     }
 
     int const& operator[](size_t i) const {
