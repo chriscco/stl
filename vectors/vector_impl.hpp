@@ -96,10 +96,38 @@ public:
      * @param first
      * @param last
      */
-    void assign(size_t n, int val) {
+    void assign(int const* it, size_t n, int val) {
+        size_t j = it - m_data;
+        if (n == 0) return;
+        m_size += n;
+        reserve(m_size);
+        for (int i = (int) n; i > 0; i--) {
+            m_data[j + n + i - 1] = std::move(m_data[j + i - 1]);
+        }
+        for (int i = (int) j; i < j + n; i++) {
+            m_data[i] = val;
+        }
+    }
+
+    template<std::random_access_iterator InputIt>
+    void insert(int const* it, InputIt first, InputIt last) {
+        size_t n = last - first, j = it - m_data;
+        if (n == 0) return;
+        m_size += n;
+        reserve(m_size);
+        for (int i = (int) n; i > 0; i--) {
+            m_data[j + n + i - 1] = std::move(m_data[j + i - 1]);
+        }
+        for (int i = (int) j; i < j + n; i++) {
+            m_data[i] = *first;
+            first++;
+        }
+    }
+
+    void insert(int const* it, size_t n, int val) {
         reserve(n);
         m_size = n;
-        for (int i = 0; i < n; i++) {
+        for (int i = it - m_data; i < n; i++) {
             m_data[i] = val;
         }
     }
