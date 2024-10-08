@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstring>
+#include <memory>
 
 class Vectors {
 private:
@@ -16,11 +17,11 @@ public:
 
     explicit Vectors(size_t size) {
         m_data = allocator{}.allocate(size);
-        for (size_t i = 0; i < m_size; i++) {
-            std::construct_at(&m_data[i]);
-        }
         m_size = size;
         m_capacity = size;
+        for (size_t i = 0; i < m_size; i++) {
+            std::construct_at(&m_data[i], 0);
+        }
     }
 
     explicit Vectors(size_t size, int val) {
@@ -54,8 +55,7 @@ public:
      * @param that
      */
     Vectors(Vectors const& that) {
-        m_size = that.m_size;
-        m_capacity = that.m_capacity;
+        m_capacity = m_size = that.m_size;
         if (m_size != 0) {
             m_data = allocator{}.allocate(m_size);
             for (size_t i = 0; i < m_size; i++) {
