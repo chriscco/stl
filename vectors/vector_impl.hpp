@@ -1,7 +1,6 @@
+#pragma once
 #include <vector>
 #include <cstring>
-#ifndef STL_VECTORS_HPP
-#define STL_VECTORS_HPP
 
 class Vectors {
 private:
@@ -82,6 +81,3 @@ public:
 
     ~Vectors() { delete[] m_data; }
 };
-
-
-#endif //STL_VECTORS_HPP
