@@ -12,7 +12,8 @@ public:
     Vectors() : m_data(nullptr), m_size(0), m_capacity(0){};
 
     explicit Vectors(size_t size) {
-        m_data = new int[size]{};
+        m_data = new int[size];
+        memset(m_data, 0, sizeof(int) * size);
         m_size = size;
         m_capacity = size;
     }
@@ -67,14 +68,26 @@ public:
     }
 
     void resize(size_t size) {
-        grow_capacity_until(size);
+        reserve(size);
         m_size = size;
     }
 
-    void grow_capacity_until(size_t n) {
+    void shrink_to_fit() {
+        m_capacity = m_size;
+        if (m_size == 0) {
+            m_data = nullptr;
+        } else m_data = new int[m_size];
+
+        auto old_data = m_data;
+        if (old_data) {
+            memcpy(m_data, old_data, m_size * sizeof(int));
+            delete[] old_data;
+        }
+    }
+
+    void reserve(size_t n) {
         if (n <= m_capacity) [[likely]] return;
         n = std::max(n, m_capacity * 2);
-        printf("grow from %zd to %zd\n", m_capacity, n);
         auto old_data = m_data;
 
         if (n == 0) {
