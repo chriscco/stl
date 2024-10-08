@@ -1,7 +1,8 @@
 #include "vector_impl.hpp"
 #include <iostream>
 
-void printVector(Vectors const& vec) {
+template <class T>
+void printVector(Vectors<T> const& vec) {
     std::cout << "&Vector: " << &vec << std::endl;
     for (int i = 0; i < vec.size(); i++) {
         std::cout << "vec[" << i << "]: " << vec[i] << std::endl;
@@ -9,12 +10,11 @@ void printVector(Vectors const& vec) {
 }
 
 int main() {
-    Vectors arr(10);
+    Vectors<int> arr(15);
     for (int i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
-    arr.resize(5);
-    arr.erase(3);
+    arr.erase(arr.begin() + 1, arr.begin() + 5);
     std::cout << "--------------------" << std::endl;
     printVector(arr);
     std::cout << "--------------------" << std::endl;
@@ -23,20 +23,21 @@ int main() {
     printVector(arr);
     std::cout << "--------------------" << std::endl;
 
-    Vectors bar = arr;
+    Vectors<int> bar = arr;
     bar[0] = 10000;
     printVector(bar);
     std::cout << "--------------------" << std::endl;
 
-    Vectors car;
+    Vectors<int> car;
     car = bar;
     car.resize(4);
     car[3] = 200;
     printVector(car);
     std::cout << "--------------------" << std::endl;
 
-    Vectors this_vec_test;
+    Vectors<int> this_vec_test;
     std::cout << "This push_back..." << std::endl;
+    this_vec_test.reserve(100000);
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < 100000; i++) {
@@ -47,6 +48,7 @@ int main() {
 
     std::vector<int> vec_test;
     std::cout << "Standard push_back..." << std::endl;
+    vec_test.reserve(100000);
     start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 100000; i++) {
         vec_test.push_back(i);
@@ -58,6 +60,18 @@ int main() {
               << "duration_two: " << duration_two.count() << std::endl;
 
     std::cout << "--------------------" << std::endl;
+
+    struct S {
+        int x, y;
+
+        void print() {
+            std::cout << "x: " << x << " y: " << y << std::endl;
+        }
+    };
+
+    Vectors<S> vec_struct;
+    vec_struct.emplace_back() = {1, 20};
+
 
     arr.resize(0);
     return 0;
