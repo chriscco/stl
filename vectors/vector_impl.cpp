@@ -9,11 +9,12 @@ void printVector(Vectors const& vec) {
 }
 
 int main() {
-    Vectors arr(3);
+    Vectors arr(10);
     for (int i = 0; i < arr.size(); i++) {
         arr[i] = i;
     }
     arr.resize(5);
+    arr.erase(3);
     std::cout << "--------------------" << std::endl;
     printVector(arr);
     std::cout << "--------------------" << std::endl;
@@ -38,7 +39,7 @@ int main() {
     std::cout << "This push_back..." << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100000; i++) {
         this_vec_test.push_back(i);
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -47,7 +48,7 @@ int main() {
     std::vector<int> vec_test;
     std::cout << "Standard push_back..." << std::endl;
     start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100000; i++) {
         vec_test.push_back(i);
     }
     end = std::chrono::high_resolution_clock::now();
