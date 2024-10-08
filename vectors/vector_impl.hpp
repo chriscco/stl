@@ -280,11 +280,19 @@ public:
         return m_data + m_size;
     }
 
-    std::reverse_iterator<int const*> rbegin() {
+    std::reverse_iterator<int *> rbegin() {
         return std::make_reverse_iterator(m_data);
     }
 
-    std::reverse_iterator<int const*> rend() {
+    std::reverse_iterator<int *> rend() {
+        return std::make_reverse_iterator(m_data + m_size);
+    }
+
+    std::reverse_iterator<int const*> rbegin() const {
+        return std::make_reverse_iterator(m_data);
+    }
+
+    std::reverse_iterator<int const*> rend() const {
         return std::make_reverse_iterator(m_data + m_size);
     }
 
