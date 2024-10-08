@@ -27,6 +27,12 @@ public:
         }
     }
 
+    /**
+     * 调用@code{explicit Vectors(InputIt first, InputIt last)}
+     * @param list
+     */
+    Vectors(std::initializer_list<int> list) : Vectors(list.begin(), list.end()){};
+
     template<std::random_access_iterator InputIt>
     explicit Vectors(InputIt first, InputIt last) {
         size_t n = last - first;
@@ -114,6 +120,14 @@ public:
         }
     }
 
+    /**
+     * 转发给对应函数
+     * @param list
+     */
+    void assign(std::initializer_list<int> list) {
+        assign(list.begin(), list.end());
+    }
+
     template<std::random_access_iterator InputIt>
     void insert(int const* it, InputIt first, InputIt last) {
         size_t n = last - first, j = it - m_data;
@@ -140,6 +154,13 @@ public:
         for (int i = (int) j; i < j + n; i++) {
             m_data[i] = val;
         }
+    }
+    /**
+     * 转发给对应函数
+     * @param list
+     */
+    void insert(int const* it, std::initializer_list<int> list) {
+        insert(it, list.begin(), list.end());
     }
 
     void swap(Vectors& that) {
