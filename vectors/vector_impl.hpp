@@ -21,11 +21,21 @@ public:
 
     explicit Vectors(size_t size, int val) {
         m_data = new int[size];
+        m_capacity = m_size = size;
         for (size_t i = 0; i < size; i++) {
             m_data[i] = val;
         }
-        m_size = size;
-        m_capacity = size;
+    }
+
+    template<std::random_access_iterator InputIt>
+    explicit Vectors(InputIt first, InputIt last) {
+        size_t n = last - first;
+        m_data = new int[n];
+        m_capacity = m_size = n;
+        for (size_t i = 0; i < n; i++) {
+            m_data[i] = *first;
+            first++;
+        }
     }
 
     /**
