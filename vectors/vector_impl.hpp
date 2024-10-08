@@ -72,20 +72,29 @@ public:
     }
 
     Vectors(Vectors&& that) noexcept {
+        // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
+        if (m_size != 0) delete[] m_data;
+
         m_data = that.m_data;
         m_size = that.m_size;
         m_capacity = that.m_capacity;
+
         that.m_data = nullptr;
         that.m_size = 0;
         that.m_capacity = 0;
     }
 
     Vectors& operator=(Vectors&& that) noexcept {
-        clear();
+        // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
+        if (m_size != 0) delete[] m_data;
+
         m_data = that.m_data;
         m_size = that.m_size;
+        m_capacity = that.m_capacity;
+
         that.m_data = nullptr;
         that.m_size = 0;
+        that.m_capacity = 0;
         return *this;
     }
 
