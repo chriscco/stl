@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <cstring>
 
@@ -14,6 +15,15 @@ public:
     explicit Vectors(size_t size) {
         m_data = new int[size];
         memset(m_data, 0, sizeof(int) * size);
+        m_size = size;
+        m_capacity = size;
+    }
+
+    explicit Vectors(size_t size, int val) {
+        m_data = new int[size];
+        for (size_t i = 0; i < size; i++) {
+            m_data[i] = val;
+        }
         m_size = size;
         m_capacity = size;
     }
@@ -61,6 +71,43 @@ public:
         that.m_data = nullptr;
         that.m_size = 0;
         return *this;
+    }
+
+    /**
+     * 用于给向量重新赋值, 或者复制元素
+     * @tparam InputIt
+     * @param first
+     * @param last
+     */
+    template<std::random_access_iterator InputIt>
+    void assign(InputIt first, InputIt last) {
+        size_t n = last - first;
+        reserve(n);
+        m_size = n;
+        for (int i = 0; i < n; i++) {
+            m_data[i] = *first;
+            first++;
+        }
+    }
+
+    /**
+     * 用于给向量重新赋值, 或者复制元素
+     * @tparam InputIt
+     * @param first
+     * @param last
+     */
+    void assign(size_t n, int val) {
+        reserve(n);
+        m_size = n;
+        for (int i = 0; i < n; i++) {
+            m_data[i] = val;
+        }
+    }
+
+    void swap(Vectors& that) {
+        std::swap(m_data, that.m_data);
+        std::swap(m_size, that.m_size);
+        std::swap(m_capacity, that.m_capacity);
     }
 
     void clear() {
@@ -148,8 +195,9 @@ public:
     }
 
     void push_back(int val) {
-        resize(size() + 1);
-        back() = val;
+        reserve(m_size + 1);
+        m_data[m_size] = val;
+        m_size += 1;
     }
 
     void erase(size_t i) {
