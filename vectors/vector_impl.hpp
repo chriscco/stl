@@ -5,6 +5,8 @@
 
 class Vectors {
 private:
+    using allocator = std::allocator<int>;
+
     int* m_data;
     size_t m_size;
     size_t m_capacity;
@@ -13,14 +15,16 @@ public:
     Vectors() : m_data(nullptr), m_size(0), m_capacity(0){};
 
     explicit Vectors(size_t size) {
-        m_data = new int[size];
-        memset(m_data, 0, sizeof(int) * size);
+        m_data = allocator{}.allocate(size);
+        for (size_t i = 0; i < m_size; i++) {
+            std::construct_at(&m_data[i]);
+        }
         m_size = size;
         m_capacity = size;
     }
 
     explicit Vectors(size_t size, int val) {
-        m_data = new int[size];
+        m_data = allocator{}.allocate(size);
         m_capacity = m_size = size;
         for (size_t i = 0; i < size; i++) {
             m_data[i] = val;
@@ -36,7 +40,8 @@ public:
     template<std::random_access_iterator InputIt>
     explicit Vectors(InputIt first, InputIt last) {
         size_t n = last - first;
-        m_data = new int[n];
+        m_data = allocator{}.allocate(n);
+
         m_capacity = m_size = n;
         for (size_t i = 0; i < n; i++) {
             m_data[i] = *first;
@@ -52,8 +57,10 @@ public:
         m_size = that.m_size;
         m_capacity = that.m_capacity;
         if (m_size != 0) {
-            m_data = new int[that.m_size];
-            memcpy(m_data, that.m_data, m_size * sizeof(int));
+            m_data = allocator{}.allocate(m_size);
+            for (size_t i = 0; i < m_size; i++) {
+                std::construct_at(&m_data[i], std::as_const(that.m_data[i]));
+            }
         } else {
             m_data = nullptr;
         }
@@ -65,15 +72,17 @@ public:
         clear();
         m_size = that.m_size;
         if (m_size != 0) {
-            m_data = new int[m_size]{};
-            memcpy(m_data, that.m_data, m_size * sizeof(int));
+            m_data = allocator{}.allocate(m_size);
+            for (size_t i = 0; i < m_size; i++) {
+                std::construct_at(&m_data[i], std::as_const(that.m_data[i]));
+            }
         }
         return *this;
     }
 
     Vectors(Vectors&& that) noexcept {
         // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
-        if (m_size != 0) delete[] m_data;
+        if (m_capacity != 0) allocator{}.deallocate(m_data, m_capacity);
 
         m_data = that.m_data;
         m_size = that.m_size;
@@ -86,7 +95,7 @@ public:
 
     Vectors& operator=(Vectors&& that) noexcept {
         // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
-        if (m_size != 0) delete[] m_data;
+        if (m_capacity != 0) allocator{}.deallocate(m_data, m_capacity);
 
         m_data = that.m_data;
         m_size = that.m_size;
@@ -187,16 +196,23 @@ public:
         m_size = size;
     }
 
+    /**
+     * 将capacity缩小到size
+     */
     void shrink_to_fit() {
+        auto old_data = m_data;
+        auto old_capacity = m_capacity;
+
         m_capacity = m_size;
         if (m_size == 0) {
             m_data = nullptr;
-        } else m_data = new int[m_size];
+        } else m_data = allocator{}.allocate(m_size);
 
-        auto old_data = m_data;
         if (old_data) {
-            memcpy(m_data, old_data, m_size * sizeof(int));
-            delete[] old_data;
+            for (size_t i = 0; i < m_size; i++) {
+                std::construct_at(&m_data[i], std::as_const(old_data[i]));
+            }
+            allocator{}.deallocate(old_data, old_capacity);
         }
     }
 
@@ -204,19 +220,21 @@ public:
         if (n <= m_capacity) [[likely]] return;
         n = std::max(n, m_capacity * 2);
         auto old_data = m_data;
-
+        auto old_capacity = m_capacity;
         if (n == 0) {
             m_data = nullptr;
             m_capacity = 0;
         } else {
-            m_data = new int[n];
+            m_data = allocator{}.allocate(n);
             m_capacity = n;
         }
         if (old_data) {
             if (m_size != 0) {
-                memcpy(m_data, old_data, m_size * sizeof(int));
+                for (size_t i = 0; i < m_size; i++) {
+                    std::construct_at(&m_data[i], std::as_const(old_data[i]));
+                }
             }
-            delete[] old_data;
+            allocator{}.deallocate(old_data, old_capacity);
         }
     }
 
@@ -315,5 +333,5 @@ public:
         return m_data[i];
     }
 
-    ~Vectors() { delete[] m_data; }
+    ~Vectors() { if (m_capacity != 0) allocator{}.deallocate(m_data, m_capacity); }
 };
