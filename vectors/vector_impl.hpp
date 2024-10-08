@@ -41,6 +41,22 @@ public:
         return *this;
     }
 
+    Vectors(Vectors&& that) noexcept {
+        m_data = that.m_data;
+        m_size = that.m_size;
+        that.m_data = nullptr;
+        that.m_size = 0;
+    }
+
+    Vectors& operator=(Vectors&& that) noexcept {
+        clear();
+        m_data = that.m_data;
+        m_size = that.m_size;
+        that.m_data = nullptr;
+        that.m_size = 0;
+        return *this;
+    }
+
     void clear() {
         resize(0);
     }
@@ -64,7 +80,37 @@ public:
 
             delete[] old_data;
         }
+    }
 
+    [[nodiscard]] int const& at(size_t i) const {
+        if (i >= m_size) throw std::out_of_range("vector::at");
+        return m_data[i];
+    }
+
+    int& at(size_t i) {
+        if (i >= m_size) throw std::out_of_range("vector::at");
+        return m_data[i];
+    }
+
+    [[nodiscard]] int const& front() const {
+        return at(0);
+    }
+
+    int& front() {
+        return at(0);
+    }
+
+    [[nodiscard]] int const& back() const {
+        return at(m_size - 1);
+    }
+
+    int& back() {
+        return at(m_size - 1);
+    }
+
+    void push_back(int val) {
+        resize(size() + 1);
+        back() = val;
     }
 
     [[nodiscard]] size_t size() const {
