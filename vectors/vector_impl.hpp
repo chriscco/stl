@@ -6,13 +6,15 @@ class Vectors {
 private:
     int* m_data;
     size_t m_size;
+    size_t m_capacity;
 
 public:
-    Vectors() : m_data(nullptr), m_size(0) {};
+    Vectors() : m_data(nullptr), m_size(0), m_capacity(0){};
 
     explicit Vectors(size_t size) {
         m_data = new int[size]{};
         m_size = size;
+        m_capacity = size;
     }
 
     /**
@@ -21,6 +23,7 @@ public:
      */
     Vectors(Vectors const& that) {
         m_size = that.m_size;
+        m_capacity = that.m_capacity;
         if (m_size != 0) {
             m_data = new int[that.m_size];
             memcpy(m_data, that.m_data, m_size * sizeof(int));
@@ -44,8 +47,10 @@ public:
     Vectors(Vectors&& that) noexcept {
         m_data = that.m_data;
         m_size = that.m_size;
+        m_capacity = that.m_capacity;
         that.m_data = nullptr;
         that.m_size = 0;
+        that.m_capacity = 0;
     }
 
     Vectors& operator=(Vectors&& that) noexcept {
@@ -58,26 +63,31 @@ public:
     }
 
     void clear() {
-        resize(0);
+        m_size = 0;
     }
 
     void resize(size_t size) {
-        auto old_data = m_data;
-        auto old_size = m_size;
+        grow_capacity_until(size);
+        m_size = size;
+    }
 
-        if (size == 0) {
+    void grow_capacity_until(size_t n) {
+        if (n <= m_capacity) [[likely]] return;
+        n = std::max(n, m_capacity * 2);
+        printf("grow from %zd to %zd\n", m_capacity, n);
+        auto old_data = m_data;
+
+        if (n == 0) {
             m_data = nullptr;
-            m_size = 0;
+            m_capacity = 0;
         } else {
-            m_data = new int[size]{};
-            m_size = size;
+            m_data = new int[n];
+            m_capacity = n;
         }
         if (old_data) {
-            size_t copy_size = std::min(size, old_size);
-            if (copy_size != 0) {
-                memcpy(m_data, old_data, std::min(size, old_size) * sizeof(int));
+            if (m_size != 0) {
+                memcpy(m_data, old_data, m_size * sizeof(int));
             }
-
             delete[] old_data;
         }
     }
