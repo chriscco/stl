@@ -288,11 +288,11 @@ public:
         return std::make_reverse_iterator(m_data + m_size);
     }
 
-    std::reverse_iterator<int const*> rbegin() const {
+    [[nodiscard]] std::reverse_iterator<int const*> rbegin() const {
         return std::make_reverse_iterator(m_data);
     }
 
-    std::reverse_iterator<int const*> rend() const {
+    [[nodiscard]] std::reverse_iterator<int const*> rend() const {
         return std::make_reverse_iterator(m_data + m_size);
     }
 
@@ -305,10 +305,25 @@ public:
     }
 
 
-    void push_back(int val) {
+    void push_back(T const& val) {
         reserve(m_size + 1);
-        m_data[m_size] = val;
+        std::construct_at(&m_data[m_size], val);
         m_size += 1;
+    }
+
+    void push_back(T &&val) {
+        reserve(m_size + 1);
+        std::construct_at(&m_data[m_size], std::move(val));
+        m_size += 1;
+    }
+
+    template<class ...Args>
+    T& push_back(Args &&... args) {
+        reserve(m_size + 1);
+        T *p = &m_data[m_size];
+        std::construct_at(&m_data[m_size], std::forward<Args>(args)...);
+        m_size += 1;
+        return *p;
     }
 
     void erase(size_t i) {
