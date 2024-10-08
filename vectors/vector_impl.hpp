@@ -4,9 +4,10 @@
 #include <cstring>
 #include <memory>
 
+template<class T, class Alloc = std::allocator<T>>
 class Vectors {
 private:
-    using allocator = std::allocator<int>;
+    using allocator = Alloc;
 
     int* m_data;
     size_t m_size;
@@ -56,7 +57,7 @@ public:
      */
     Vectors(Vectors const& that) {
         m_capacity = m_size = that.m_size;
-        if (m_size != 0) {
+        if (m_capacity != 0) {
             m_data = allocator{}.allocate(m_size);
             for (size_t i = 0; i < m_size; i++) {
                 std::construct_at(&m_data[i], std::as_const(that.m_data[i]));
@@ -69,9 +70,8 @@ public:
     Vectors& operator=(Vectors const& that) {
         if (this == &that) return *this;
 
-        clear();
-        m_size = that.m_size;
-        if (m_size != 0) {
+        m_capacity = m_size = that.m_size;
+        if (m_capacity != 0) {
             m_data = allocator{}.allocate(m_size);
             for (size_t i = 0; i < m_size; i++) {
                 std::construct_at(&m_data[i], std::as_const(that.m_data[i]));
@@ -208,7 +208,7 @@ public:
             m_data = nullptr;
         } else m_data = allocator{}.allocate(m_size);
 
-        if (old_data) {
+        if (old_capacity) {
             for (size_t i = 0; i < m_size; i++) {
                 std::construct_at(&m_data[i], std::as_const(old_data[i]));
             }
@@ -228,8 +228,8 @@ public:
             m_data = allocator{}.allocate(n);
             m_capacity = n;
         }
-        if (old_data) {
-            if (m_size != 0) {
+        if (old_capacity) {
+            if (m_capacity != 0) {
                 for (size_t i = 0; i < m_size; i++) {
                     std::construct_at(&m_data[i], std::as_const(old_data[i]));
                 }
@@ -268,7 +268,7 @@ public:
         return m_data;
     }
 
-    [[nodiscard]] int const * begin() const {
+    [[nodiscard]] int const *cbegin() const {
         return m_data;
     }
 
@@ -276,9 +276,26 @@ public:
         return m_data + m_size;
     }
 
-    [[nodiscard]] int const *end() const {
+    [[nodiscard]] int const *cend() const {
         return m_data + m_size;
     }
+
+    std::reverse_iterator<int const*> rbegin() {
+        return std::make_reverse_iterator(m_data);
+    }
+
+    std::reverse_iterator<int const*> rend() {
+        return std::make_reverse_iterator(m_data + m_size);
+    }
+
+    [[nodiscard]] std::reverse_iterator<int const*> crbegin() const {
+        return std::make_reverse_iterator(m_data);
+    }
+
+    [[nodiscard]] std::reverse_iterator<int const*> crend() const {
+        return std::make_reverse_iterator(m_data + m_size);
+    }
+
 
     void push_back(int val) {
         reserve(m_size + 1);
