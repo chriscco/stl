@@ -9,7 +9,7 @@ class Vectors {
 private:
     using allocator = Alloc;
 
-    int* m_data;
+    T* m_data;
     size_t m_size;
     size_t m_capacity;
 
@@ -25,11 +25,11 @@ public:
         }
     }
 
-    explicit Vectors(size_t size, int val) {
+    explicit Vectors(size_t size, T const& val) {
         m_data = allocator{}.allocate(size);
         m_capacity = m_size = size;
         for (size_t i = 0; i < size; i++) {
-            m_data[i] = val;
+            std::construct_at(&m_data[i], val);
         }
     }
 
@@ -318,7 +318,7 @@ public:
     }
 
     template<class ...Args>
-    T& push_back(Args &&... args) {
+    T& emplace_back(Args &&... args) {
         reserve(m_size + 1);
         T *p = &m_data[m_size];
         std::construct_at(&m_data[m_size], std::forward<Args>(args)...);
