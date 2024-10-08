@@ -34,6 +34,30 @@ int main() {
     printVector(car);
     std::cout << "--------------------" << std::endl;
 
+    Vectors this_vec_test;
+    std::cout << "This push_back..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < 1000; i++) {
+        this_vec_test.push_back(i);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration_one = end - start;
+
+    std::vector<int> vec_test;
+    std::cout << "Standard push_back..." << std::endl;
+    start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 1000; i++) {
+        vec_test.push_back(i);
+    }
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration_two = end - start;
+
+    std::cout << "duration_one: " << duration_one.count() << "\n"
+              << "duration_two: " << duration_two.count() << std::endl;
+
+    std::cout << "--------------------" << std::endl;
+
     arr.resize(0);
     return 0;
 }
