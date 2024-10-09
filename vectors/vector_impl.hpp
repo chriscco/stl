@@ -153,7 +153,7 @@ public:
         if (n == 0) return const_cast<T *> (it);
         reserve(m_size + n);
         for (size_t i = m_size; i > j; i--) {
-            std::construct_at(&m_data[i], std::move(m_data[i - 1]));
+            std::construct_at(&m_data[i + n - 1], std::move(m_data[i - 1]));
             std::destroy_at(&m_data[i - 1]);
         }
         m_size += n;
@@ -194,7 +194,7 @@ public:
         if (n == 0) return const_cast<T *> (it);
         reserve(m_size + n);
         for (size_t i = m_size; i > j; i--) {
-            std::construct_at(&m_data[i], std::move(m_data[i - 1]));
+            std::construct_at(&m_data[i + n - 1], std::move(m_data[i - 1]));
             std::destroy_at(&m_data[i - 1]);
         }
         m_size += n;
