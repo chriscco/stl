@@ -42,6 +42,12 @@ public:
      */
     Vectors(std::initializer_list<T> list) : Vectors(list.begin(), list.end()){};
 
+    /**
+     * 确保传入的参数是iterator类型
+     * @tparam InputIt
+     * @param first
+     * @param last
+     */
     template<std::random_access_iterator InputIt>
     explicit Vectors(InputIt first, InputIt last) {
         size_t n = last - first;
@@ -70,6 +76,11 @@ public:
         }
     }
 
+    /**
+     * 确保拷贝的对象的capacity也被传入当前的对象
+     * @param that
+     * @return
+     */
     Vectors& operator=(Vectors const& that) {
         if (this == &that) return *this;
 
@@ -83,6 +94,10 @@ public:
         return *this;
     }
 
+    /**
+     * 确保移动构造后原本的对象被析构
+     * @param that
+     */
     Vectors(Vectors&& that) noexcept {
         // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
         if (m_capacity != 0) allocator.deallocate(m_data, m_capacity);
@@ -96,6 +111,11 @@ public:
         that.m_capacity = 0;
     }
 
+    /**
+     * 确保移动构造后原本的对象被析构
+     * @param that
+     * @return
+     */
     Vectors& operator=(Vectors&& that) noexcept {
         if (this == &that) return *this;
         // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
@@ -169,6 +189,12 @@ public:
         return m_data + j;
     }
 
+    /**
+     * 插入单个元素
+     * @param it
+     * @param val
+     * @return
+     */
     T* insert(T const* it, T const& val) {
         size_t j = it - m_data;
         reserve(m_size + 1);
@@ -194,6 +220,13 @@ public:
         return m_data + j;
     }
 
+    /**
+     * 插入多个元素
+     * @param it
+     * @param n
+     * @param val
+     * @return
+     */
     T* insert(T const* it, size_t n, T const& val) {
         size_t j = it - m_data;
         if (n == 0) return const_cast<T *> (it);
@@ -212,7 +245,7 @@ public:
     }
 
     /**
-     * 转发给对应函数
+     * 转发给@code{T* insert(T const* it, InputIt first, InputIt last)}
      * @param list
      */
     T* insert(T const* it, std::initializer_list<T> list) {
@@ -225,10 +258,15 @@ public:
         std::swap(m_capacity, that.m_capacity);
     }
 
+    /**
+     * 需要将m_size置为0
+     * m_capacity不需要
+     */
     void clear() {
         for (size_t i = 0; i < m_size; i++) {
             std::destroy_at(&m_data[i]);
         }
+        m_size = 0;
     }
 
     void resize(size_t size) {
@@ -359,24 +397,30 @@ public:
 
 
     void push_back(T const& val) {
-        reserve(m_size + 1);
+        if(m_size + 1 > m_capacity) reserve(m_size + 1);
         std::construct_at(&m_data[m_size], val);
         m_size += 1;
     }
 
     void push_back(T &&val) {
-        reserve(m_size + 1);
+        if(m_size + 1 > m_capacity) reserve(m_size + 1);
         std::construct_at(&m_data[m_size], std::move(val));
         m_size += 1;
     }
 
     template<class ...Args>
     T& emplace_back(Args &&... args) {
-        reserve(m_size + 1);
+        if(m_size + 1 > m_capacity) reserve(m_size + 1);
+
         T *p = &m_data[m_size];
         std::construct_at(&m_data[m_size], std::forward<Args>(args)...);
         m_size += 1;
         return *p;
+    }
+
+    void pop_back() {
+        m_size -= 1;
+        std::destroy_at(&m_data[m_size]);
     }
 
     void erase(size_t i) {
