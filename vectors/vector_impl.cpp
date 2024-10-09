@@ -1,8 +1,7 @@
 #include "vector_impl.hpp"
-#include <iostream>
 
 template <class T>
-void printVector(Vectors<T> const& vec, std::string name = "vector") {
+void printVector(Vectors<T> const& vec, std::string name = "defaultVector") {
     printf("&Vectors of %s: %p\n", name.c_str(), &vec);
     for (int i = 0; i < vec.size(); i++) {
         std::cout << name << "[" << i << "]" << ": " << vec[i] << std::endl;
@@ -74,7 +73,7 @@ int main() {
     }
     std::cout << "-----------------------------" << std::endl;
     Vectors<int> insert_arr(10);
-    insert_arr.insert(insert_arr.begin(), {40, 50, 60});
+    insert_arr.insert(insert_arr.begin() + 2, 3,15);
     printVector(insert_arr, "insert_arr");
 
     std::cout << "-----------------------------" << std::endl;
