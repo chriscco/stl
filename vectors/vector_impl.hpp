@@ -153,7 +153,7 @@ public:
         m_size += n;
         reserve(m_size);
         for (size_t i = n; i > 0; i--) {
-            m_data[j + n + i - 1] = std::move(m_data[j + i - 1]);
+            std::construct_at(&m_data[j + n + i - 1], std::move(m_data[j + i - 1]));
         }
         for (size_t i = j; i < j + n; i++) {
             std::construct_at(&m_data[i], *first);
@@ -167,7 +167,7 @@ public:
         m_size += n;
         reserve(m_size);
         for (size_t i = n; i > 0; i--) {
-            m_data[j + n + i - 1] = std::move(m_data[j + i - 1]);
+            std::construct_at(&m_data[j + n + i - 1], std::move(m_data[j + i - 1]));
         }
         for (size_t i = j; i < j + n; i++) {
             std::construct_at(&m_data[i], val);
@@ -188,12 +188,27 @@ public:
     }
 
     void clear() {
-        m_size = 0;
+        for (size_t i = 0; i < m_size; i++) {
+            std::destroy_at(&m_data[i]);
+        }
     }
 
     void resize(size_t size) {
         reserve(size);
-        m_size = size;
+        if (size > m_size) {
+            for (size_t i = m_size; i < size; i++) {
+                std::construct_at(&m_data[i]);
+            }
+        }
+    }
+
+    void resize(size_t size, T const& val) {
+        reserve(size);
+        if (size > m_size) {
+            for (size_t i = m_size; i < size; i++) {
+                std::construct_at(&m_data[i], val);
+            }
+        }
     }
 
     /**
@@ -210,7 +225,7 @@ public:
 
         if (old_capacity) {
             for (size_t i = 0; i < m_size; i++) {
-                std::construct_at(&m_data[i], std::as_const(old_data[i]));
+                std::construct_at(&m_data[i], std::as_const(old_data[i])); // m_data[i] = old_data[i];
             }
             allocator{}.deallocate(old_data, old_capacity);
         }
