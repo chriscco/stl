@@ -21,7 +21,7 @@ public:
         m_size = size;
         m_capacity = size;
         for (size_t i = 0; i < m_size; i++) {
-            std::construct_at(&m_data[i], 0);
+            std::construct_at(&m_data[i]);
         }
     }
 
@@ -37,7 +37,7 @@ public:
      * 调用@code{explicit Vectors(InputIt first, InputIt last)}
      * @param list
      */
-    Vectors(std::initializer_list<int> list) : Vectors(list.begin(), list.end()){};
+    Vectors(std::initializer_list<T> list) : Vectors(list.begin(), list.end()){};
 
     template<std::random_access_iterator InputIt>
     explicit Vectors(InputIt first, InputIt last) {
@@ -118,8 +118,8 @@ public:
         size_t n = last - first;
         reserve(n);
         m_size = n;
-        for (int i = 0; i < n; i++) {
-            m_data[i] = *first;
+        for (size_t i = 0; i < n; i++) {
+            std::construct_at(&m_data[i], *first);
             first++;
         }
     }
@@ -130,11 +130,11 @@ public:
      * @param first
      * @param last
      */
-    void assign(size_t n, int val) {
+    void assign(size_t n, T const& val) {
         reserve(n);
         m_size = n;
-        for (int i = 0; i < n; i++) {
-            m_data[i] = val;
+        for (size_t i = 0; i < n; i++) {
+            std::construct_at(&m_data[i], val);
         }
     }
 
@@ -142,42 +142,42 @@ public:
      * 转发给对应函数
      * @param list
      */
-    void assign(std::initializer_list<int> list) {
+    void assign(std::initializer_list<T> list) {
         assign(list.begin(), list.end());
     }
 
     template<std::random_access_iterator InputIt>
-    void insert(int const* it, InputIt first, InputIt last) {
+    void insert(T const* it, InputIt first, InputIt last) {
         size_t n = last - first, j = it - m_data;
         if (n == 0) return;
         m_size += n;
         reserve(m_size);
-        for (int i = (int) n; i > 0; i--) {
+        for (size_t i = n; i > 0; i--) {
             m_data[j + n + i - 1] = std::move(m_data[j + i - 1]);
         }
-        for (int i = (int) j; i < j + n; i++) {
-            m_data[i] = *first;
+        for (size_t i = j; i < j + n; i++) {
+            std::construct_at(&m_data[i], *first);
             first++;
         }
     }
 
-    void insert(int const* it, size_t n, int val) {
+    void insert(T const* it, size_t n, T const& val) {
         size_t j = it - m_data;
         if (n == 0) return;
         m_size += n;
         reserve(m_size);
-        for (int i = (int) n; i > 0; i--) {
+        for (size_t i = n; i > 0; i--) {
             m_data[j + n + i - 1] = std::move(m_data[j + i - 1]);
         }
-        for (int i = (int) j; i < j + n; i++) {
-            m_data[i] = val;
+        for (size_t i = j; i < j + n; i++) {
+            std::construct_at(&m_data[i], val);
         }
     }
     /**
      * 转发给对应函数
      * @param list
      */
-    void insert(int const* it, std::initializer_list<int> list) {
+    void insert(T const* it, std::initializer_list<T> list) {
         insert(it, list.begin(), list.end());
     }
 
@@ -238,69 +238,69 @@ public:
         }
     }
 
-    [[nodiscard]] int const& at(size_t i) const {
+    [[nodiscard]] T const& at(size_t i) const {
         if (i >= m_size) throw std::out_of_range("vector::at");
         return m_data[i];
     }
 
-    int& at(size_t i) {
+    T& at(size_t i) {
         if (i >= m_size) throw std::out_of_range("vector::at");
         return m_data[i];
     }
 
-    [[nodiscard]] int const& front() const {
+    [[nodiscard]] T const& front() const {
         return at(0);
     }
 
-    int& front() {
+    T& front() {
         return at(0);
     }
 
-    [[nodiscard]] int const& back() const {
+    [[nodiscard]] T const& back() const {
         return at(m_size - 1);
     }
 
-    int& back() {
+    T& back() {
         return at(m_size - 1);
     }
 
-    int* begin() {
+    T* begin() {
         return m_data;
     }
 
-    [[nodiscard]] int const *cbegin() const {
+    [[nodiscard]] T const *cbegin() const {
         return m_data;
     }
 
-    int* end() {
+    T* end() {
         return m_data + m_size;
     }
 
-    [[nodiscard]] int const *cend() const {
+    [[nodiscard]] T const *cend() const {
         return m_data + m_size;
     }
 
-    std::reverse_iterator<int *> rbegin() {
+    std::reverse_iterator<T *> rbegin() {
         return std::make_reverse_iterator(m_data);
     }
 
-    std::reverse_iterator<int *> rend() {
+    std::reverse_iterator<T *> rend() {
         return std::make_reverse_iterator(m_data + m_size);
     }
 
-    [[nodiscard]] std::reverse_iterator<int const*> rbegin() const {
+    [[nodiscard]] std::reverse_iterator<T const*> rbegin() const {
         return std::make_reverse_iterator(m_data);
     }
 
-    [[nodiscard]] std::reverse_iterator<int const*> rend() const {
+    [[nodiscard]] std::reverse_iterator<T const*> rend() const {
         return std::make_reverse_iterator(m_data + m_size);
     }
 
-    [[nodiscard]] std::reverse_iterator<int const*> crbegin() const {
+    [[nodiscard]] std::reverse_iterator<T const*> crbegin() const {
         return std::make_reverse_iterator(m_data);
     }
 
-    [[nodiscard]] std::reverse_iterator<int const*> crend() const {
+    [[nodiscard]] std::reverse_iterator<T const*> crend() const {
         return std::make_reverse_iterator(m_data + m_size);
     }
 
@@ -341,7 +341,7 @@ public:
         resize(m_size - diff);
     }
 
-    void erase(int const* it) {
+    void erase(T const* it) {
         size_t i = it - m_data;
         for (size_t j = i + 1; j < m_size; j++) {
             m_data[j - 1] = std::move(m_data[j]);
@@ -349,7 +349,7 @@ public:
         resize(m_size - 1);
     }
 
-    void erase(int const* first, int const* last) {
+    void erase(T const* first, T const* last) {
         size_t diff = last - first;
         for (size_t j = last - m_data; j < m_size; j++) {
             m_data[j - diff] = std::move(m_data[j]);
@@ -365,11 +365,11 @@ public:
         return m_capacity;
     }
 
-    int const& operator[](size_t i) const {
+    T const& operator[](size_t i) const {
         return m_data[i];
     }
 
-    int& operator[](size_t i) {
+    T& operator[](size_t i) {
         return m_data[i];
     }
 
