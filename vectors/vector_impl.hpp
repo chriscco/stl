@@ -7,7 +7,7 @@
 template<class T, class Alloc = std::allocator<T>>
 class Vectors {
 private:
-    using allocator = Alloc;
+    [[no_unique_address]] Alloc allocator;
 
     T* m_data;
     size_t m_size;
@@ -17,7 +17,7 @@ public:
     Vectors() : m_data(nullptr), m_size(0), m_capacity(0){};
 
     explicit Vectors(size_t size) {
-        m_data = allocator{}.allocate(size);
+        m_data = allocator.allocate(size);
         m_size = size;
         m_capacity = size;
         for (size_t i = 0; i < m_size; i++) {
@@ -26,7 +26,7 @@ public:
     }
 
     explicit Vectors(size_t size, T const& val) {
-        m_data = allocator{}.allocate(size);
+        m_data = allocator.allocate(size);
         m_capacity = m_size = size;
         for (size_t i = 0; i < size; i++) {
             std::construct_at(&m_data[i], val);
@@ -42,7 +42,7 @@ public:
     template<std::random_access_iterator InputIt>
     explicit Vectors(InputIt first, InputIt last) {
         size_t n = last - first;
-        m_data = allocator{}.allocate(n);
+        m_data = allocator.allocate(n);
 
         m_capacity = m_size = n;
         for (size_t i = 0; i < n; i++) {
@@ -58,7 +58,7 @@ public:
     Vectors(Vectors const& that) {
         m_capacity = m_size = that.m_size;
         if (m_capacity != 0) {
-            m_data = allocator{}.allocate(m_size);
+            m_data = allocator.allocate(m_size);
             for (size_t i = 0; i < m_size; i++) {
                 std::construct_at(&m_data[i], std::as_const(that.m_data[i]));
             }
@@ -72,7 +72,7 @@ public:
 
         m_capacity = m_size = that.m_size;
         if (m_capacity != 0) {
-            m_data = allocator{}.allocate(m_size);
+            m_data = allocator.allocate(m_size);
             for (size_t i = 0; i < m_size; i++) {
                 std::construct_at(&m_data[i], std::as_const(that.m_data[i]));
             }
@@ -82,7 +82,7 @@ public:
 
     Vectors(Vectors&& that) noexcept {
         // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
-        if (m_capacity != 0) allocator{}.deallocate(m_data, m_capacity);
+        if (m_capacity != 0) allocator.deallocate(m_data, m_capacity);
 
         m_data = that.m_data;
         m_size = that.m_size;
@@ -94,8 +94,9 @@ public:
     }
 
     Vectors& operator=(Vectors&& that) noexcept {
+        if (this == &that) return *this;
         // 如果移动赋值的目的地对象已经有元素了, 删除原本的元素
-        if (m_capacity != 0) allocator{}.deallocate(m_data, m_capacity);
+        if (m_capacity != 0) allocator.deallocate(m_data, m_capacity);
 
         m_data = that.m_data;
         m_size = that.m_size;
@@ -147,7 +148,7 @@ public:
     }
 
     template<std::random_access_iterator InputIt>
-    void insert(T const* it, InputIt first, InputIt last) {
+    T* insert(T const* it, InputIt first, InputIt last) {
         size_t n = last - first, j = it - m_data;
         if (n == 0) return;
         m_size += n;
@@ -159,9 +160,10 @@ public:
             std::construct_at(&m_data[i], *first);
             first++;
         }
+        return const_cast<T *> (it);
     }
 
-    void insert(T const* it, size_t n, T const& val) {
+    T* insert(T const* it, size_t n, T const& val) {
         size_t j = it - m_data;
         if (n == 0) return;
         m_size += n;
@@ -172,13 +174,14 @@ public:
         for (size_t i = j; i < j + n; i++) {
             std::construct_at(&m_data[i], val);
         }
+        return const_cast<T *> (it);
     }
     /**
      * 转发给对应函数
      * @param list
      */
-    void insert(T const* it, std::initializer_list<T> list) {
-        insert(it, list.begin(), list.end());
+    T* insert(T const* it, std::initializer_list<T> list) {
+        return insert(it, list.begin(), list.end());
     }
 
     void swap(Vectors& that) {
@@ -221,13 +224,13 @@ public:
         m_capacity = m_size;
         if (m_size == 0) {
             m_data = nullptr;
-        } else m_data = allocator{}.allocate(m_size);
+        } else m_data = allocator.allocate(m_size);
 
         if (old_capacity) {
             for (size_t i = 0; i < m_size; i++) {
                 std::construct_at(&m_data[i], std::as_const(old_data[i])); // m_data[i] = old_data[i];
             }
-            allocator{}.deallocate(old_data, old_capacity);
+            allocator.deallocate(old_data, old_capacity);
         }
     }
 
@@ -240,7 +243,7 @@ public:
             m_data = nullptr;
             m_capacity = 0;
         } else {
-            m_data = allocator{}.allocate(n);
+            m_data = allocator.allocate(n);
             m_capacity = n;
         }
         if (old_capacity) {
@@ -249,7 +252,7 @@ public:
                     std::construct_at(&m_data[i], std::as_const(old_data[i]));
                 }
             }
-            allocator{}.deallocate(old_data, old_capacity);
+            allocator.deallocate(old_data, old_capacity);
         }
     }
 
@@ -356,20 +359,22 @@ public:
         resize(m_size - diff);
     }
 
-    void erase(T const* it) {
+    T* erase(T const* it) {
         size_t i = it - m_data;
         for (size_t j = i + 1; j < m_size; j++) {
             m_data[j - 1] = std::move(m_data[j]);
         }
         resize(m_size - 1);
+        return const_cast<T *> (it + 1);
     }
 
-    void erase(T const* first, T const* last) {
+    T* erase(T const* first, T const* last) {
         size_t diff = last - first;
         for (size_t j = last - m_data; j < m_size; j++) {
             m_data[j - diff] = std::move(m_data[j]);
         }
         resize(m_size - diff);
+        return const_cast<T *> (last);
     }
 
     [[nodiscard]] size_t size() const {
@@ -388,5 +393,5 @@ public:
         return m_data[i];
     }
 
-    ~Vectors() { if (m_capacity != 0) allocator{}.deallocate(m_data, m_capacity); }
+    ~Vectors() { if (m_capacity != 0) allocator.deallocate(m_data, m_capacity); }
 };
