@@ -63,15 +63,16 @@ int main() {
 
     struct S {
         int x, y;
-
-        void print() {
-            std::cout << "x: " << x << " y: " << y << std::endl;
+        void print() const {
+            std::cout << "Output Struct... x: " << x << " y: " << y << std::endl;
         }
     };
-
     Vectors<S> vec_struct;
-    vec_struct.emplace_back() = {1, 20};
-
+    vec_struct.emplace_back().x = 20;
+    for (auto &s: vec_struct) {
+        s.print();
+    }
+    std::cout << "--------------------" << std::endl;
 
     arr.resize(0);
     return 0;
