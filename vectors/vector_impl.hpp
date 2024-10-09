@@ -1,8 +1,11 @@
 #pragma once
 
 #include <vector>
+#include <iostream>
 #include <cstring>
 #include <memory>
+#include <utility>
+#include <initializer_list>
 
 template<class T, class Alloc = std::allocator<T>>
 class Vectors {
@@ -116,6 +119,7 @@ public:
      */
     template<std::random_access_iterator InputIt>
     void assign(InputIt first, InputIt last) {
+        clear();
         size_t n = last - first;
         reserve(n);
         m_size = n;
@@ -132,6 +136,7 @@ public:
      * @param last
      */
     void assign(size_t n, T const& val) {
+        clear();
         reserve(n);
         m_size = n;
         for (size_t i = 0; i < n; i++) {
@@ -193,16 +198,19 @@ public:
         size_t j = it - m_data;
         if (n == 0) return const_cast<T *> (it);
         reserve(m_size + n);
+        /* 将当前iterator之后的元素往后移n位 */
         for (size_t i = m_size; i > j; i--) {
             std::construct_at(&m_data[i + n - 1], std::move(m_data[i - 1]));
             std::destroy_at(&m_data[i - 1]);
         }
         m_size += n;
+        /* 给指定的区间元素赋值 */
         for (size_t i = j; i < j + n; i++) {
             std::construct_at(&m_data[i], val);
         }
         return m_data + j;
     }
+
     /**
      * 转发给对应函数
      * @param list
