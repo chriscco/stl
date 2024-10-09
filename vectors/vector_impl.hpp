@@ -150,31 +150,58 @@ public:
     template<std::random_access_iterator InputIt>
     T* insert(T const* it, InputIt first, InputIt last) {
         size_t n = last - first, j = it - m_data;
-        if (n == 0) return;
-        m_size += n;
-        reserve(m_size);
-        for (size_t i = n; i > 0; i--) {
-            std::construct_at(&m_data[j + n + i - 1], std::move(m_data[j + i - 1]));
+        if (n == 0) return const_cast<T *> (it);
+        reserve(m_size + n);
+        for (size_t i = m_size; i > j; i--) {
+            std::construct_at(&m_data[i], std::move(m_data[i - 1]));
+            std::destroy_at(&m_data[i - 1]);
         }
+        m_size += n;
         for (size_t i = j; i < j + n; i++) {
             std::construct_at(&m_data[i], *first);
             first++;
         }
-        return const_cast<T *> (it);
+        return m_data + j;
+    }
+
+    T* insert(T const* it, T const& val) {
+        size_t j = it - m_data;
+        reserve(m_size + 1);
+        for (size_t i = m_size; i > j; i--) {
+            std::construct_at(&m_data[i], std::move(m_data[i - 1]));
+            std::destroy_at(&m_data[i - 1]);
+        }
+        m_size += 1;
+        std::construct_at(&m_data[j], val);
+        return m_data + j;
+    }
+
+    T* insert(T const* it, T&& val) {
+        size_t j = it - m_data;
+        reserve(m_size + 1);
+        for (size_t i = m_size; i > j; i--) {
+            std::construct_at(&m_data[i], std::move(m_data[i - 1]));
+            std::destroy_at(&m_data[i - 1]);
+        }
+        m_size += 1;
+        std::construct_at(&m_data[j], std::move(val));
+
+        return m_data + j;
     }
 
     T* insert(T const* it, size_t n, T const& val) {
         size_t j = it - m_data;
-        if (n == 0) return;
-        m_size += n;
-        reserve(m_size);
-        for (size_t i = n; i > 0; i--) {
-            std::construct_at(&m_data[j + n + i - 1], std::move(m_data[j + i - 1]));
+        if (n == 0) return const_cast<T *> (it);
+        reserve(m_size + n);
+        for (size_t i = m_size; i > j; i--) {
+            std::construct_at(&m_data[i], std::move(m_data[i - 1]));
+            std::destroy_at(&m_data[i - 1]);
         }
+        m_size += n;
         for (size_t i = j; i < j + n; i++) {
             std::construct_at(&m_data[i], val);
         }
-        return const_cast<T *> (it);
+        return m_data + j;
     }
     /**
      * 转发给对应函数
