@@ -1,4 +1,4 @@
-#include "Vectors.hpp"
+#include "vectors.hpp"
 
 template <class T>
 void printVector(Vectors<T> const& vec, std::string name = "defaultVector") {
