@@ -39,28 +39,39 @@ public:
 
     void rotate_right(Node* node) {
         Node *left = node->left;
-        while (node->parent != nullptr) {
-            if (node == node->parent->left) {
-                node->parent->left = left;
-            } else {
-                node->parent->right = left;
-            }
+        node->left = left->right;
+        if (left->right != nullptr) {
+            left->right->parent = node;
+        }
+        left->parent = node->parent;
+        if (node->parent == nullptr) {
+            root = left;
+        } else if (node == node->parent->left) {
+            node->parent->left = left;
+        } else {
+            node->parent->right = left;
         }
         left->right = node;
-        node->left = left->right;
+        node->parent = left;
     }
 
     void rotate_left(Node* node) {
         Node *right = node->right;
-        while (node->parent != nullptr) {
-            if (node == node->parent->left) {
-                node->parent->left = right;
-            } else {
-                node->parent->right = right;
-            }
+        node->right = right->left;
+        if (right->left != nullptr) {
+            right->left->parent = node;
+        }
+        right->parent = node->parent;
+        if (node->parent == nullptr) {
+            root = right;
+        } else if (node == node->parent->right) {
+            node->parent->right = right;
+        } else {
+            node->parent->left = right;
         }
         right->left = node;
-        node->right = right->left;
+        node->parent = right;
+
     }
 
     void fix_violation(Node* node) {
