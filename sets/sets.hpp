@@ -5,6 +5,11 @@ enum Color {
     RED
 };
 
+enum Direction {
+    LEFT,
+    RIGHT
+};
+
 struct Node {
     Node *parent;
     Node* left;
@@ -59,11 +64,48 @@ public:
     }
 
     void fix_violation(Node* node) {
-        if (node->parent == nullptr) {
-            node->color = BLACK;
-            return;
+        while (true) {
+            Node* parent = node->parent;
+            if (parent == nullptr) {
+                node->color = BLACK;
+                return;
+            }
+            if (node->color == RED || parent->color == RED) return;
+
+            Node *uncle, *grandpa = parent->parent;
+
+            Direction parent_direction = parent == grandpa->left ? LEFT : RIGHT;
+            if (parent_direction == LEFT) {
+                uncle = grandpa->right;
+            } else uncle = grandpa->left;
+
+            Direction node_direction = node == parent->left ? LEFT : RIGHT;
+            if (uncle->color == RED) {
+                // 1. uncle是红色节点
+                uncle->color = BLACK;
+                parent->color = BLACK;
+                grandpa->color = RED;
+                fix_violation(grandpa);
+            } else {
+                if (parent_direction == LEFT && node_direction == LEFT) {
+                    // 2. uncle是黑色节点 && parent和node在同侧(LL)
+                    rotate_right(grandpa);
+                    std::swap(parent->color, grandpa->color);
+                    if (grandpa->color == RED) fix_violation(grandpa);
+                } else if (parent_direction == RIGHT && node_direction == RIGHT) {
+                    // 2. uncle是黑色节点 && parent和node在同侧(RR)
+                    rotate_left(grandpa);
+                    std::swap(parent->color, grandpa->color);
+                    if (grandpa->color == RED) fix_violation(grandpa);
+                } else if (parent_direction == LEFT && node_direction == RIGHT) {
+                    // 2. uncle是黑色节点 && parent和node在不同侧(LR)
+                    rotate_right(parent);
+                } else if (parent_direction == RIGHT && node_direction == LEFT) {
+                    // 2. uncle是黑色节点 && parent和node在不同侧(RL)
+                    rotate_left(parent);
+                }
+            }
         }
-        while (node->color == RED && )
     }
 
     bool insert(int val) {
