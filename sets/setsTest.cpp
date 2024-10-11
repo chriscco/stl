@@ -11,6 +11,7 @@ int main() {
     s.insert(0);
     s.insert(18);
     s.insert(30);
+    std::cout << s.insert(39).first->val << std::endl;
     std::cout << s.find(3) << std::endl;
     return 0;
 }

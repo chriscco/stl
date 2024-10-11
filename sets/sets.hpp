@@ -4,7 +4,6 @@ enum Color {
     BLACK,
     RED
 };
-
 enum Direction {
     LEFT,
     RIGHT
@@ -71,7 +70,6 @@ public:
         }
         right->left = node;
         node->parent = right;
-
     }
 
     void fix_violation(Node* node) {
@@ -119,7 +117,7 @@ public:
         }
     }
 
-    bool insert(int val) {
+    std::pair<Node*, bool> insert(int val) {
         Node* node = new Node;
         node->val = val;
         node->right = nullptr;
@@ -137,12 +135,12 @@ public:
                 p_next  = &parent->left;
                 continue;
             }
-            return false; // 找到了相同值的节点
+            return {parent, false}; // 找到了相同值的节点
         }
         node->parent = parent;
         *p_next = node;
         fix_violation(node);
 
-        return true;
+        return {node, true};
     }
 };
