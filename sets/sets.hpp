@@ -1,8 +1,16 @@
 #pragma once
+
+enum Color {
+    BLACK,
+    RED
+};
+
 struct Node {
     Node *parent;
     Node* left;
     Node* right;
+    Color color;
+
     int val;
 };
 
@@ -24,11 +32,46 @@ public:
         return curr;
     }
 
+    void rotate_right(Node* node) {
+        Node *left = node->left;
+        while (node->parent != nullptr) {
+            if (node == node->parent->left) {
+                node->parent->left = left;
+            } else {
+                node->parent->right = left;
+            }
+        }
+        left->right = node;
+        node->left = left->right;
+    }
+
+    void rotate_left(Node* node) {
+        Node *right = node->right;
+        while (node->parent != nullptr) {
+            if (node == node->parent->left) {
+                node->parent->left = right;
+            } else {
+                node->parent->right = right;
+            }
+        }
+        right->left = node;
+        node->right = right->left;
+    }
+
+    void fix_violation(Node* node) {
+        if (node->parent == nullptr) {
+            node->color = BLACK;
+            return;
+        }
+        while (node->color == RED && )
+    }
+
     bool insert(int val) {
         Node* node = new Node;
         node->val = val;
         node->right = nullptr;
         node->left = nullptr;
+        node->color = RED;
 
         Node** p_next = &root;
         Node* parent = nullptr;
@@ -45,6 +88,7 @@ public:
         }
         node->parent = parent;
         *p_next = node;
+        fix_violation(node);
 
         return true;
     }
