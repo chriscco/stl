@@ -118,12 +118,6 @@ public:
     }
 
     std::pair<Node*, bool> insert(int val) {
-        Node* node = new Node;
-        node->val = val;
-        node->right = nullptr;
-        node->left = nullptr;
-        node->color = RED;
-
         Node** p_next = &root;
         Node* parent = nullptr;
         while (*p_next != nullptr) {
@@ -137,6 +131,12 @@ public:
             }
             return {parent, false}; // 找到了相同值的节点
         }
+        Node* node = new Node;
+        node->val = val;
+        node->right = nullptr;
+        node->left = nullptr;
+        node->color = RED;
+
         node->parent = parent;
         *p_next = node;
         fix_violation(node);
