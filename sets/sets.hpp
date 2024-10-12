@@ -21,6 +21,41 @@ struct Node {
 class Sets {
     Node* root = nullptr;
 public:
+    struct iterator {
+        Node* node;
+    private:
+        explicit iterator(Node* node) : node(node) {};
+
+        bool operator==(iterator const& that) const noexcept {
+            return node == that.node;
+        }
+
+        bool operator!=(iterator const& that) const noexcept {
+            return node != that.node;
+        }
+
+        iterator &operator++() noexcept {
+            return *this;
+        }
+
+        iterator &operator--() noexcept {
+            return *this;
+        }
+
+        iterator operator++(int) noexcept {
+            auto tmp = *this;
+            ++*this;
+            return tmp;
+        }
+
+        iterator operator--(int) noexcept {
+            auto tmp = *this;
+            --*this;
+            return tmp;
+        }
+
+        friend Sets;
+    };
     Node* find(int val) {
         Node* curr = root;
         while (curr != nullptr) {
