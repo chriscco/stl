@@ -1,31 +1,14 @@
 #pragma once
-
-enum Color {
-    BLACK,
-    RED
-};
-enum Direction {
-    LEFT,
-    RIGHT
-};
-
-struct Node {
-    Node *parent;
-    Node* left;
-    Node* right;
-    Color color;
-
-    int val;
-};
+#include "utils/tree.hpp"
 
 template <class T, class compare = std::less<T>, class allocator = std::allocator<T>>
 class Sets {
-    Node* root = nullptr;
+    TreeNode* root = nullptr;
 public:
     struct iterator {
     private:
-        Node* node;
-        explicit iterator(Node* node) : node(node) {};
+        TreeNode* node;
+        explicit iterator(TreeNode* node) : node(node) {};
 
     public:
         bool operator==(iterator const& that) const noexcept {
@@ -58,8 +41,8 @@ public:
 
         friend Sets;
     };
-    Node* find(int val) {
-        Node* curr = root;
+    TreeNode* find(int val) {
+        TreeNode* curr = root;
         while (curr != nullptr) {
             if (curr->val < val) {
                 curr = curr->right;
@@ -73,8 +56,8 @@ public:
         return curr;
     }
 
-    void rotate_right(Node* node) {
-        Node *left = node->left;
+    void rotate_right(TreeNode* node) {
+        TreeNode *left = node->left;
         node->left = left->right;
         if (left->right != nullptr) {
             left->right->parent = node;
@@ -91,8 +74,8 @@ public:
         node->parent = left;
     }
 
-    void rotate_left(Node* node) {
-        Node *right = node->right;
+    void rotate_left(TreeNode* node) {
+        TreeNode *right = node->right;
         node->right = right->left;
         if (right->left != nullptr) {
             right->left->parent = node;
@@ -109,16 +92,16 @@ public:
         node->parent = right;
     }
 
-    void fix_violation(Node* node) {
+    void fix_violation(TreeNode* node) {
         while (true) {
-            Node* parent = node->parent;
+            TreeNode* parent = node->parent;
             if (parent == nullptr) {
                 node->color = BLACK;
                 return;
             }
             if (node->color == RED || parent->color == RED) return;
 
-            Node *uncle, *grandpa = parent->parent;
+            TreeNode *uncle, *grandpa = parent->parent;
 
             Direction parent_direction = parent == grandpa->left ? LEFT : RIGHT;
             if (parent_direction == LEFT) {
@@ -154,9 +137,9 @@ public:
         }
     }
 
-    std::pair<Node*, bool> insert(int val) {
-        Node** p_next = &root;
-        Node* parent = nullptr;
+    std::pair<TreeNode*, bool> insert(int val) {
+        TreeNode** p_next = &root;
+        TreeNode* parent = nullptr;
         while (*p_next != nullptr) {
             parent = *p_next;
             if (parent->val < val) {
@@ -168,7 +151,7 @@ public:
             }
             return {parent, false}; // 找到了相同值的节点
         }
-        Node* node = new Node;
+        auto* node = new TreeNode;
         node->val = val;
         node->right = nullptr;
         node->left = nullptr;
