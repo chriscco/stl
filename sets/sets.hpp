@@ -18,14 +18,16 @@ struct Node {
     int val;
 };
 
+template <class T, class compare = std::less<T>, class allocator = std::allocator<T>>
 class Sets {
     Node* root = nullptr;
 public:
     struct iterator {
-        Node* node;
     private:
+        Node* node;
         explicit iterator(Node* node) : node(node) {};
 
+    public:
         bool operator==(iterator const& that) const noexcept {
             return node == that.node;
         }
