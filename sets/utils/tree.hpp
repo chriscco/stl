@@ -133,16 +133,15 @@ public:
 
 template<class T>
 struct TreeImpl {
-protected:
+private:
     TreeNode* node;
 
     using iterator = TreeIterator<T, false>;
     using reverse_iterator = TreeIterator<T, true>;
     using const_iterator = TreeIterator<T const, false>;
     using const_reverse_iterator = TreeIterator<T const, true>;
-public:
 
-    const_iterator * find(int val) {
+    TreeNode* _M_find(int val) const noexcept {
         TreeNode* curr = node;
         while (curr != nullptr) {
             if (curr->val < val) {
@@ -157,19 +156,42 @@ public:
         return curr;
     }
 
-    TreeNode* find(int val) {
+public:
+
+    iterator begin() noexcept {
         TreeNode* curr = node;
-        while (curr != nullptr) {
-            if (curr->val < val) {
-                curr = curr->right;
-                continue;
-            } else if (curr->val > val) {
+        if (curr != nullptr) {
+            while (curr->left != nullptr) {
                 curr = curr->left;
-                continue;
             }
-            break;
         }
         return curr;
+    }
+
+    reverse_iterator rbegin() noexcept {
+        TreeNode* curr = node;
+        if (curr != nullptr) {
+            while (curr->right != nullptr) {
+                curr = curr->right;
+            }
+        }
+        return curr;
+    }
+
+    iterator end() noexcept {
+        return {rbegin(), true};
+    }
+
+    reverse_iterator rend() noexcept {
+        return {begin(), true};
+    }
+
+    const_iterator find(int val) const noexcept {
+        return _M_find(val);
+    }
+
+    iterator find(int val) noexcept {
+        return _M_find(val);
     }
 
     void rotate_right(TreeNode* target) {
