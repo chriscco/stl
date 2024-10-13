@@ -141,7 +141,7 @@ private:
     using const_iterator = TreeIterator<T const, false>;
     using const_reverse_iterator = TreeIterator<T const, true>;
 
-    TreeNode* _M_find(int val) const noexcept {
+    [[nodiscard]] TreeNode* M_find(int val) const noexcept {
         TreeNode* curr = node;
         while (curr != nullptr) {
             if (curr->val < val) {
@@ -156,9 +156,7 @@ private:
         return curr;
     }
 
-public:
-
-    iterator begin() noexcept {
+    TreeNode* Min_Node() const noexcept {
         TreeNode* curr = node;
         if (curr != nullptr) {
             while (curr->left != nullptr) {
@@ -168,7 +166,7 @@ public:
         return curr;
     }
 
-    reverse_iterator rbegin() noexcept {
+    TreeNode* Max_Node() const noexcept {
         TreeNode* curr = node;
         if (curr != nullptr) {
             while (curr->right != nullptr) {
@@ -178,20 +176,30 @@ public:
         return curr;
     }
 
+public:
+
+    iterator begin() noexcept {
+        return Min_Node();
+    }
+
+    reverse_iterator rbegin() noexcept {
+        return Max_Node();
+    }
+
     iterator end() noexcept {
-        return {rbegin(), true};
+        return {Max_Node(), true};
     }
 
     reverse_iterator rend() noexcept {
-        return {begin(), true};
+        return {Min_Node(), true};
     }
 
     const_iterator find(int val) const noexcept {
-        return _M_find(val);
+        return M_find(val);
     }
 
     iterator find(int val) noexcept {
-        return _M_find(val);
+        return M_find(val);
     }
 
     void rotate_right(TreeNode* target) {
@@ -302,5 +310,3 @@ public:
         return {new_node, true};
     }
 };
-
-
