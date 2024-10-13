@@ -5,42 +5,6 @@ template <class T, class compare = std::less<T>, class allocator = std::allocato
 class Sets {
     TreeNode* root = nullptr;
 public:
-    struct iterator {
-    private:
-        TreeNode* node;
-        explicit iterator(TreeNode* node) : node(node) {};
-
-    public:
-        bool operator==(iterator const& that) const noexcept {
-            return node == that.node;
-        }
-
-        bool operator!=(iterator const& that) const noexcept {
-            return node != that.node;
-        }
-
-        iterator &operator++() noexcept {
-            return *this;
-        }
-
-        iterator &operator--() noexcept {
-            return *this;
-        }
-
-        iterator operator++(int) noexcept {
-            auto tmp = *this;
-            ++*this;
-            return tmp;
-        }
-
-        iterator operator--(int) noexcept {
-            auto tmp = *this;
-            --*this;
-            return tmp;
-        }
-
-        friend Sets;
-    };
     TreeNode* find(int val) {
         TreeNode* curr = root;
         while (curr != nullptr) {
