@@ -68,6 +68,19 @@ public:
             off_by_one = false;
             return *this;
         }
+        if (node->left != nullptr) {
+            node = node->left;
+            while (node->right != nullptr) {
+                node = node->right;
+            }
+        } else {
+            // 不断向上寻找离自己差值最小的下一个数
+            while (node->parent != nullptr && node->p_parent == &node->parent->left) {
+                node = node->parent;
+            }
+            node = node->parent;
+        }
+        return *this;
     }
     TreeIteratorBase operator++(int) noexcept {
         auto tmp = *this;
