@@ -130,13 +130,12 @@ struct TreeRoot {
 template<class T>
 struct TreeBase {
 protected:
-
+    TreeRoot *m_block;
+public:
     using iterator = TreeIterator<T, false>;
     using reverse_iterator = TreeIterator<T, true>;
     using const_iterator = TreeIterator<T const, false>;
     using const_reverse_iterator = TreeIterator<T const, true>;
-    
-    TreeRoot *m_block;
 
     TreeBase() noexcept : m_block(new TreeRoot) {};
 
@@ -149,12 +148,7 @@ protected:
         return *this;
     }
 
-    TreeBase(TreeBase const& that) {
-        if (that != this) {
-
-        }
-    }
-
+protected:
     [[nodiscard]] TreeNode* M_find(int val) const noexcept {
         TreeNode* curr = m_block->m_node;
         while (curr != nullptr) {
@@ -358,20 +352,24 @@ public:
         return {Min_Node(), true};
     }
 
-    const_iterator find(int val) const noexcept {
+    iterator _M_find(int val) noexcept {
         TreeNode *res = M_find(val);
         if (res) return m_block->m_node;
         else return end();
     }
 
-    iterator find(int val) noexcept {
+    const_iterator _M_find(int val) const noexcept {
         TreeNode *res = M_find(val);
         if (res) return m_block->m_node;
         else return end();
     }
 
-    std::pair<TreeNode*, bool> insert(int val) {
+    std::pair<iterator, bool> single_insert(int val) {
         return M_single_insert(val);
+    }
+
+    iterator multi_insert(int val) {
+        return M_multi_insert(val);
     }
 
     size_t count(int val) const noexcept {
