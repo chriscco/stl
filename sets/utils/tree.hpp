@@ -105,7 +105,9 @@ struct TreeIteratorBase<true> {
 };
 
 template<class T, bool Reverse>
-struct TreeIterator : TreeIteratorBase<Reverse> {
+struct TreeIterator : protected TreeIteratorBase<Reverse> {
+protected:
+    TreeIterator(TreeNode* node, bool off_by_one) : TreeIteratorBase<Reverse>(node, off_by_one) {};
 public:
     TreeIterator &operator++() const noexcept {
         TreeIteratorBase<Reverse>::operator++();
@@ -141,6 +143,14 @@ private:
     using const_iterator = TreeIterator<T const, false>;
     using const_reverse_iterator = TreeIterator<T const, true>;
 
+    T *operator->() const noexcept {
+        return &this->node->val;
+    }
+
+    T operator*() const noexcept {
+        return this->node->val;
+    }
+
     [[nodiscard]] TreeNode* M_find(int val) const noexcept {
         TreeNode* curr = node;
         while (curr != nullptr) {
@@ -156,7 +166,7 @@ private:
         return curr;
     }
 
-    TreeNode* Min_Node() const noexcept {
+    [[nodiscard]] TreeNode* Min_Node() const noexcept {
         TreeNode* curr = node;
         if (curr != nullptr) {
             while (curr->left != nullptr) {
@@ -166,7 +176,7 @@ private:
         return curr;
     }
 
-    TreeNode* Max_Node() const noexcept {
+    [[nodiscard]] TreeNode* Max_Node() const noexcept {
         TreeNode* curr = node;
         if (curr != nullptr) {
             while (curr->right != nullptr) {
@@ -202,43 +212,37 @@ public:
         return M_find(val);
     }
 
-    void rotate_right(TreeNode* target) {
+    static void rotate_right(TreeNode* target) {
         TreeNode *left = target->left;
-        target->left = left->right;
+        target->right = left->right;
         if (left->right != nullptr) {
             left->right->parent = target;
+            left->right->p_parent = &target->left;
         }
         left->parent = target->parent;
-        if (target->parent == nullptr) {
-            node = left;
-        } else if (target == target->parent->left) {
-            target->parent->left = left;
-        } else {
-            target->parent->right = left;
-        }
+        left->p_parent = target->p_parent;
+        *target->p_parent = left;
         left->right = target;
         target->parent = left;
+        target->p_parent = &left->right;
     }
 
-    void rotate_left(TreeNode* target) {
+    static void rotate_left(TreeNode* target) {
         TreeNode *right = target->right;
         target->right = right->left;
         if (right->left != nullptr) {
             right->left->parent = target;
+            right->left->p_parent = &target->right;
         }
         right->parent = target->parent;
-        if (target->parent == nullptr) {
-            node = right;
-        } else if (target == node->parent->right) {
-            target->parent->right = right;
-        } else {
-            target->parent->left = right;
-        }
+        right->p_parent = target->p_parent;
+        *target->p_parent = right;
         right->left = target;
         target->parent = right;
+        target->p_parent = &right->left;
     }
 
-    void fix_violation(TreeNode* target) {
+    static void fix_violation(TreeNode* target) {
         while (true) {
             TreeNode* parent = target->parent;
             if (parent == nullptr) {
