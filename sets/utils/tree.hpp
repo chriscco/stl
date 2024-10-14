@@ -186,33 +186,7 @@ private:
         return curr;
     }
 
-public:
-
-    iterator begin() noexcept {
-        return Min_Node();
-    }
-
-    reverse_iterator rbegin() noexcept {
-        return Max_Node();
-    }
-
-    iterator end() noexcept {
-        return {Max_Node(), true};
-    }
-
-    reverse_iterator rend() noexcept {
-        return {Min_Node(), true};
-    }
-
-    const_iterator find(int val) const noexcept {
-        return M_find(val);
-    }
-
-    iterator find(int val) noexcept {
-        return M_find(val);
-    }
-
-    static void rotate_right(TreeNode* target) {
+    static void rotate_right(TreeNode* target) noexcept {
         TreeNode *left = target->left;
         target->right = left->right;
         if (left->right != nullptr) {
@@ -227,22 +201,33 @@ public:
         target->p_parent = &left->right;
     }
 
-    static void rotate_left(TreeNode* target) {
+    static void rotate_left(TreeNode* target) noexcept {
+        // 获取 target 的右子节点
         TreeNode *right = target->right;
+
+        // 将 target 的右子节点的左子节点连接到 target 的右子节点
         target->right = right->left;
+
+        // 如果 right 的左子节点不为空，更新其父节点和 p_parent
         if (right->left != nullptr) {
-            right->left->parent = target;
-            right->left->p_parent = &target->right;
+            right->left->parent = target; // 设置左子节点的父节点为 target
+            right->left->p_parent = &target->right; // 设置左子节点的 p_parent
         }
-        right->parent = target->parent;
-        right->p_parent = target->p_parent;
-        *target->p_parent = right;
-        right->left = target;
-        target->parent = right;
-        target->p_parent = &right->left;
+
+        // 更新 right 的父节点和 p_parent
+        right->parent = target->parent; // 将 right 的父节点设为 target 的父节点
+        right->p_parent = target->p_parent; // 更新 p_parent
+
+        // 更新 target 的 p_parent 的指向
+        *target->p_parent = right; // 将 target 的 p_parent 指向 right
+
+        // 将 target 左旋转，使其成为 right 的左子节点
+        right->left = target; // 将 target 设为 right 的左子节点
+        target->parent = right; // 更新 target 的父节点为 right
+        target->p_parent = &right->left; // 更新 target 的 p_parent
     }
 
-    static void fix_violation(TreeNode* target) {
+    static void fix_violation(TreeNode* target) noexcept {
         while (true) {
             TreeNode* parent = target->parent;
             if (parent == nullptr) {
@@ -285,6 +270,32 @@ public:
                 }
             }
         }
+    }
+
+public:
+
+    iterator begin() noexcept {
+        return Min_Node();
+    }
+
+    reverse_iterator rbegin() noexcept {
+        return Max_Node();
+    }
+
+    iterator end() noexcept {
+        return {Max_Node(), true};
+    }
+
+    reverse_iterator rend() noexcept {
+        return {Min_Node(), true};
+    }
+
+    const_iterator find(int val) const noexcept {
+        return M_find(val);
+    }
+
+    iterator find(int val) noexcept {
+        return M_find(val);
     }
 
     std::pair<TreeNode*, bool> insert(int val) {
