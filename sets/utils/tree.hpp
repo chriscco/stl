@@ -130,6 +130,12 @@ struct TreeRoot {
 template<class T>
 struct TreeBase {
 protected:
+
+    using iterator = TreeIterator<T, false>;
+    using reverse_iterator = TreeIterator<T, true>;
+    using const_iterator = TreeIterator<T const, false>;
+    using const_reverse_iterator = TreeIterator<T const, true>;
+    
     TreeRoot *m_block;
 
     TreeBase() noexcept : m_block(new TreeRoot) {};
@@ -270,16 +276,16 @@ protected:
         }
     }
 
-    std::pair<TreeNode*, bool> M_insert(int val) {
-        TreeNode** p_next = &m_block->m_node;
+    std::pair<iterator, bool> M_single_insert(int val) {
+        TreeNode** p_parent = &m_block->m_node;
         TreeNode* parent = nullptr;
-        while (*p_next != nullptr) {
-            parent = *p_next;
+        while (*p_parent != nullptr) {
+            parent = *p_parent;
             if (parent->val < val) {
-                p_next = &parent->right;
+                p_parent = &parent->right;
                 continue;
             } else if (parent->val > val) {
-                p_next  = &parent->left;
+                p_parent  = &parent->left;
                 continue;
             }
             return {parent, false}; // 找到了相同值的节点
@@ -291,19 +297,41 @@ protected:
         new_node->color = RED;
 
         new_node->parent = parent;
-        *p_next = new_node;
+        new_node->p_parent = p_parent;
+        *p_parent = new_node;
         TreeBase::M_fix_violation(new_node);
 
         return {new_node, true};
     }
 
+    iterator M_multi_insert(int val) {
+        TreeNode** p_parent = &m_block->m_node;
+        TreeNode* parent = nullptr;
+        while (*p_parent != nullptr) {
+            parent = *p_parent;
+            if (parent->val < val) {
+                p_parent = &parent->right;
+                continue;
+            } else if (parent->val > val) {
+                p_parent  = &parent->left;
+                continue;
+            }
+        }
+        auto* new_node = new TreeNode;
+        new_node->val = val;
+        new_node->right = nullptr;
+        new_node->left = nullptr;
+        new_node->color = RED;
+
+        new_node->parent = parent;
+        new_node->p_parent = p_parent;
+        *p_parent = new_node;
+        TreeBase::M_fix_violation(new_node);
+
+        return new_node;
+    }
+
 public:
-
-
-    using iterator = TreeIterator<T, false>;
-    using reverse_iterator = TreeIterator<T, true>;
-    using const_iterator = TreeIterator<T const, false>;
-    using const_reverse_iterator = TreeIterator<T const, true>;
 
     T *operator->() const noexcept {
         return &this->m_block->m_node->val;
@@ -343,7 +371,7 @@ public:
     }
 
     std::pair<TreeNode*, bool> insert(int val) {
-        return M_insert(val);
+        return M_single_insert(val);
     }
 
     size_t count(int val) const noexcept {
