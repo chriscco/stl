@@ -1,4 +1,5 @@
 #pragma once
+
 #include <memory>
 #include <utility>
 #include <iostream>
@@ -43,7 +44,7 @@ public:
     bool operator!=(TreeIteratorBase const& that) const noexcept {
         return this != &that;
     }
-    TreeIteratorBase &operator++() noexcept {
+    void operator++() noexcept {
         assert(!off_by_one);
         assert(node);
         if (node->right != nullptr) {
@@ -58,16 +59,15 @@ public:
             }
             if (node->parent == nullptr) {
                 off_by_one = true;
-                return *this;
+                return;
             }
             node = node->parent;
         }
-        return *this;
     }
-    TreeIteratorBase &operator--() noexcept {
+    void operator--() noexcept {
         if (off_by_one) {
             off_by_one = false;
-            return *this;
+            return;
         }
         if (node->left != nullptr) {
             node = node->left;
@@ -81,21 +81,10 @@ public:
             }
             if (node->parent == nullptr) {
                 off_by_one = true;
-                return *this;
+                return;
             }
             node = node->parent;
         }
-        return *this;
-    }
-    TreeIteratorBase operator++(int) noexcept {
-        auto tmp = *this;
-        ++*this;
-        return tmp;
-    }
-    TreeIteratorBase operator--(int) noexcept {
-        auto tmp = *this;
-        --*this;
-        return tmp;
     }
 };
 
@@ -133,26 +122,29 @@ public:
 
 };
 
+struct TreeRoot {
+    TreeNode* m_node;
+    TreeRoot() noexcept : m_node(nullptr) {};
+};
+
 template<class T>
-struct TreeImpl {
-private:
-    TreeNode* node;
+struct TreeBase {
+protected:
+    TreeRoot *m_block;
 
-    using iterator = TreeIterator<T, false>;
-    using reverse_iterator = TreeIterator<T, true>;
-    using const_iterator = TreeIterator<T const, false>;
-    using const_reverse_iterator = TreeIterator<T const, true>;
+    TreeBase() noexcept : m_block(new TreeRoot) {};
 
-    T *operator->() const noexcept {
-        return &this->node->val;
+    TreeBase(TreeBase &&that) noexcept : m_block(that.m_block) {
+        that.m_block = nullptr;
     }
 
-    T operator*() const noexcept {
-        return this->node->val;
+    TreeBase& operator=(TreeBase &&that) noexcept {
+        std::swap(that.m_block, m_block);
+        return *this;
     }
 
     [[nodiscard]] TreeNode* M_find(int val) const noexcept {
-        TreeNode* curr = node;
+        TreeNode* curr = m_block->m_node;
         while (curr != nullptr) {
             if (curr->val < val) {
                 curr = curr->right;
@@ -161,13 +153,13 @@ private:
                 curr = curr->left;
                 continue;
             }
-            break;
+            return curr;
         }
-        return curr;
+        return nullptr;
     }
 
     [[nodiscard]] TreeNode* Min_Node() const noexcept {
-        TreeNode* curr = node;
+        TreeNode* curr = m_block->m_node;
         if (curr != nullptr) {
             while (curr->left != nullptr) {
                 curr = curr->left;
@@ -177,7 +169,7 @@ private:
     }
 
     [[nodiscard]] TreeNode* Max_Node() const noexcept {
-        TreeNode* curr = node;
+        TreeNode* curr = m_block->m_node;
         if (curr != nullptr) {
             while (curr->right != nullptr) {
                 curr = curr->right;
@@ -249,31 +241,31 @@ private:
                 uncle->color = BLACK;
                 parent->color = BLACK;
                 grandpa->color = RED;
-                M_fix_violation(grandpa);
+                TreeBase::M_fix_violation(grandpa);
             } else {
                 if (parent_direction == LEFT && node_direction == LEFT) {
                     // 2. uncle是黑色节点 && parent和node在同侧(LL)
-                    M_rotate_right(grandpa);
+                    TreeBase::M_rotate_right(grandpa);
                     std::swap(parent->color, grandpa->color);
                     if (grandpa->color == RED) M_fix_violation(grandpa);
                 } else if (parent_direction == RIGHT && node_direction == RIGHT) {
                     // 2. uncle是黑色节点 && parent和node在同侧(RR)
-                    M_rotate_left(grandpa);
+                    TreeBase::M_rotate_left(grandpa);
                     std::swap(parent->color, grandpa->color);
                     if (grandpa->color == RED) M_fix_violation(grandpa);
                 } else if (parent_direction == LEFT && node_direction == RIGHT) {
                     // 2. uncle是黑色节点 && parent和node在不同侧(LR)
-                    M_rotate_right(parent);
+                    TreeBase::M_rotate_right(parent);
                 } else if (parent_direction == RIGHT && node_direction == LEFT) {
                     // 2. uncle是黑色节点 && parent和node在不同侧(RL)
-                    M_rotate_left(parent);
+                    TreeBase::M_rotate_left(parent);
                 }
             }
         }
     }
 
     std::pair<TreeNode*, bool> M_insert(int val) {
-        TreeNode** p_next = &node;
+        TreeNode** p_next = &m_block->node;
         TreeNode* parent = nullptr;
         while (*p_next != nullptr) {
             parent = *p_next;
@@ -294,12 +286,31 @@ private:
 
         new_node->parent = parent;
         *p_next = new_node;
-        M_fix_violation(new_node);
+        TreeBase::M_fix_violation(new_node);
 
         return {new_node, true};
     }
 
 public:
+
+};
+
+template<class T>
+struct TreeImpl : protected TreeBase<T> {
+
+    using iterator = TreeIterator<T, false>;
+    using reverse_iterator = TreeIterator<T, true>;
+    using const_iterator = TreeIterator<T const, false>;
+    using const_reverse_iterator = TreeIterator<T const, true>;
+
+    T *operator->() const noexcept {
+        return &this->node->val;
+    }
+
+    T operator*() const noexcept {
+        return this->node->val;
+    }
+
 
     iterator begin() noexcept {
         return Min_Node();
@@ -318,11 +329,15 @@ public:
     }
 
     const_iterator find(int val) const noexcept {
-        return M_find(val);
+        TreeNode *res = M_find(val);
+        if (res) return node;
+        else return end();
     }
 
     iterator find(int val) noexcept {
-        return M_find(val);
+        TreeNode *res = M_find(val);
+        if (res) return node;
+        else return end();
     }
 
     std::pair<TreeNode*, bool> insert(int val) {
@@ -330,10 +345,10 @@ public:
     }
 
     size_t count(int val) const noexcept {
-        return find(val) == end() ? 0 : 1;
+        return M_find(val) != nullptr ? 0 : 1;
     }
 
     size_t contains(int val) const noexcept {
-        return find(val) != end();
+        return M_find(val) != nullptr;
     }
 };
