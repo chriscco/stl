@@ -143,6 +143,12 @@ protected:
         return *this;
     }
 
+    TreeBase(TreeBase const& that) {
+        if (that != this) {
+
+        }
+    }
+
     [[nodiscard]] TreeNode* M_find(int val) const noexcept {
         TreeNode* curr = m_block->m_node;
         while (curr != nullptr) {
@@ -265,7 +271,7 @@ protected:
     }
 
     std::pair<TreeNode*, bool> M_insert(int val) {
-        TreeNode** p_next = &m_block->node;
+        TreeNode** p_next = &m_block->m_node;
         TreeNode* parent = nullptr;
         while (*p_next != nullptr) {
             parent = *p_next;
@@ -293,10 +299,6 @@ protected:
 
 public:
 
-};
-
-template<class T>
-struct TreeImpl : protected TreeBase<T> {
 
     using iterator = TreeIterator<T, false>;
     using reverse_iterator = TreeIterator<T, true>;
@@ -304,11 +306,11 @@ struct TreeImpl : protected TreeBase<T> {
     using const_reverse_iterator = TreeIterator<T const, true>;
 
     T *operator->() const noexcept {
-        return &this->node->val;
+        return &this->m_block->m_node->val;
     }
 
     T operator*() const noexcept {
-        return this->node->val;
+        return this->m_block->m_node->val;
     }
 
 
@@ -330,13 +332,13 @@ struct TreeImpl : protected TreeBase<T> {
 
     const_iterator find(int val) const noexcept {
         TreeNode *res = M_find(val);
-        if (res) return node;
+        if (res) return m_block->m_node;
         else return end();
     }
 
     iterator find(int val) noexcept {
         TreeNode *res = M_find(val);
-        if (res) return node;
+        if (res) return m_block->m_node;
         else return end();
     }
 
@@ -351,4 +353,10 @@ struct TreeImpl : protected TreeBase<T> {
     size_t contains(int val) const noexcept {
         return M_find(val) != nullptr;
     }
+
+};
+
+template<class T>
+struct TreeImpl : protected TreeBase<T> {
+
 };
