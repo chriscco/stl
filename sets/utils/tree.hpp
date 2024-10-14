@@ -186,7 +186,7 @@ private:
         return curr;
     }
 
-    static void rotate_right(TreeNode* target) noexcept {
+    static void M_rotate_right(TreeNode* target) noexcept {
         TreeNode *left = target->left;
         target->right = left->right;
         if (left->right != nullptr) {
@@ -201,7 +201,7 @@ private:
         target->p_parent = &left->right;
     }
 
-    static void rotate_left(TreeNode* target) noexcept {
+    static void M_rotate_left(TreeNode* target) noexcept {
         // 获取 target 的右子节点
         TreeNode *right = target->right;
 
@@ -227,7 +227,7 @@ private:
         target->p_parent = &right->left; // 更新 target 的 p_parent
     }
 
-    static void fix_violation(TreeNode* target) noexcept {
+    static void M_fix_violation(TreeNode* target) noexcept {
         while (true) {
             TreeNode* parent = target->parent;
             if (parent == nullptr) {
@@ -249,27 +249,54 @@ private:
                 uncle->color = BLACK;
                 parent->color = BLACK;
                 grandpa->color = RED;
-                fix_violation(grandpa);
+                M_fix_violation(grandpa);
             } else {
                 if (parent_direction == LEFT && node_direction == LEFT) {
                     // 2. uncle是黑色节点 && parent和node在同侧(LL)
-                    rotate_right(grandpa);
+                    M_rotate_right(grandpa);
                     std::swap(parent->color, grandpa->color);
-                    if (grandpa->color == RED) fix_violation(grandpa);
+                    if (grandpa->color == RED) M_fix_violation(grandpa);
                 } else if (parent_direction == RIGHT && node_direction == RIGHT) {
                     // 2. uncle是黑色节点 && parent和node在同侧(RR)
-                    rotate_left(grandpa);
+                    M_rotate_left(grandpa);
                     std::swap(parent->color, grandpa->color);
-                    if (grandpa->color == RED) fix_violation(grandpa);
+                    if (grandpa->color == RED) M_fix_violation(grandpa);
                 } else if (parent_direction == LEFT && node_direction == RIGHT) {
                     // 2. uncle是黑色节点 && parent和node在不同侧(LR)
-                    rotate_right(parent);
+                    M_rotate_right(parent);
                 } else if (parent_direction == RIGHT && node_direction == LEFT) {
                     // 2. uncle是黑色节点 && parent和node在不同侧(RL)
-                    rotate_left(parent);
+                    M_rotate_left(parent);
                 }
             }
         }
+    }
+
+    std::pair<TreeNode*, bool> M_insert(int val) {
+        TreeNode** p_next = &node;
+        TreeNode* parent = nullptr;
+        while (*p_next != nullptr) {
+            parent = *p_next;
+            if (parent->val < val) {
+                p_next = &parent->right;
+                continue;
+            } else if (parent->val > val) {
+                p_next  = &parent->left;
+                continue;
+            }
+            return {parent, false}; // 找到了相同值的节点
+        }
+        auto* new_node = new TreeNode;
+        new_node->val = val;
+        new_node->right = nullptr;
+        new_node->left = nullptr;
+        new_node->color = RED;
+
+        new_node->parent = parent;
+        *p_next = new_node;
+        M_fix_violation(new_node);
+
+        return {new_node, true};
     }
 
 public:
@@ -299,29 +326,14 @@ public:
     }
 
     std::pair<TreeNode*, bool> insert(int val) {
-        TreeNode** p_next = &node;
-        TreeNode* parent = nullptr;
-        while (*p_next != nullptr) {
-            parent = *p_next;
-            if (parent->val < val) {
-                p_next = &parent->right;
-                continue;
-            } else if (parent->val > val) {
-                p_next  = &parent->left;
-                continue;
-            }
-            return {parent, false}; // 找到了相同值的节点
-        }
-        auto* new_node = new TreeNode;
-        new_node->val = val;
-        new_node->right = nullptr;
-        new_node->left = nullptr;
-        new_node->color = RED;
+        return M_insert(val);
+    }
 
-        new_node->parent = parent;
-        *p_next = new_node;
-        fix_violation(new_node);
+    size_t count(int val) const noexcept {
+        return find(val) == end() ? 0 : 1;
+    }
 
-        return {new_node, true};
+    size_t contains(int val) const noexcept {
+        return find(val) != end();
     }
 };
