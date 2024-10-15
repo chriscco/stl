@@ -6,42 +6,48 @@
 #include <cassert>
 #include <iterator>
 
-enum Tree_color {
+enum RBTree_color {
     BLACK,
     RED
 };
-enum Direction {
+enum RBDirection {
     LEFT,
     RIGHT
 };
 
-struct TreeNode {
-    TreeNode* left;
-    TreeNode* right;
-    TreeNode *parent;
-    TreeNode** p_parent; // 父节点中指向本节点的指针
-    Tree_color color;
+struct RBTreeNode {
+    RBTreeNode* left;
+    RBTreeNode* right;
+    RBTreeNode *parent;
+    RBTreeNode** p_parent; // 父节点中指向本节点的指针
+    RBTree_color color;
 
     int val;
 };
 
 template <bool>
-struct TreeIteratorBase;
+struct RBTreeIteratorBase;
 
 template<>
-struct TreeIteratorBase<false> {
-protected:
-    TreeNode* node;
+struct RBTreeIteratorBase<false> {
+    union {
+        RBTreeNode* node;
+        RBTreeNode** p_root;
+    };
     bool off_by_one;
 
 public:
-    TreeIteratorBase(bool offByOne, TreeNode *node) : off_by_one(offByOne), node(node) {}
-    explicit TreeIteratorBase() : node(nullptr), off_by_one(false) {}
 
-    bool operator==(TreeIteratorBase const& that) const noexcept {
+    template<class, bool>
+    friend struct RBTreeIterator;
+
+    RBTreeIteratorBase(bool offByOne, RBTreeNode *node) : off_by_one(offByOne), node(node) {}
+    explicit RBTreeIteratorBase() : node(nullptr), off_by_one(false) {}
+
+    bool operator==(RBTreeIteratorBase const& that) const noexcept {
         return that.off_by_one == off_by_one || node == that.node;
     }
-    bool operator!=(TreeIteratorBase const& that) const noexcept {
+    bool operator!=(RBTreeIteratorBase const& that) const noexcept {
         return this != &that;
     }
     void operator++() noexcept {
@@ -89,41 +95,62 @@ public:
 };
 
 template<>
-struct TreeIteratorBase<true> {
-
+struct RBTreeIteratorBase<true> : RBTreeIteratorBase<false> {
+protected:
+    using RBTreeIteratorBase<false>::RBTreeIteratorBase;
 };
 
 template<class T, bool Reverse>
-struct TreeIterator : protected TreeIteratorBase<Reverse> {
+struct RBTreeIterator : protected RBTreeIteratorBase<Reverse> {
 protected:
-    TreeIterator(TreeNode* node, bool off_by_one) : TreeIteratorBase<Reverse>(node, off_by_one) {};
+    using RBTreeIteratorBase<Reverse>::RBTreeIteratorBase;
+
+    RBTreeIterator(RBTreeNode* node, bool off_by_one) : RBTreeIteratorBase<Reverse>(node, off_by_one) {};
 public:
-    TreeIterator &operator++() const noexcept {
-        TreeIteratorBase<Reverse>::operator++();
+    template<class T0 = T>
+    explicit operator std::enable_if_t<std::is_const_v<T0>, RBTreeIterator<std::remove_const_t<T0>, Reverse>>()
+    const noexcept {
+        if (!this->off_by_one) {
+            return this->node;
+        } else {
+            return this->p_root;
+        }
+    }
+
+    template<class T0 = T>
+    explicit operator std::enable_if_t<!std::is_const_v<T0>, RBTreeIterator<std::add_const_t<T0>, Reverse>>()
+    const noexcept {
+        if (!this->off_by_one) {
+            return this->node;
+        } else {
+            return this->p_root;
+        }
+    }
+    RBTreeIterator &operator++() const noexcept {
+        RBTreeIteratorBase<Reverse>::operator++();
         return *this;
     }
 
-    TreeIterator &operator--() const noexcept {
-        TreeIteratorBase<Reverse>::operator--();
+    RBTreeIterator &operator--() const noexcept {
+        RBTreeIteratorBase<Reverse>::operator--();
         return *this;
     }
 
-    TreeIterator operator++(int) const noexcept {
-        TreeIterator temp = *this;
+    RBTreeIterator operator++(int) const noexcept {
+        RBTreeIterator temp = *this;
         ++*this;
         return temp;
     }
 
-    TreeIterator operator--(int) const noexcept {
-        TreeIterator temp = *this;
+    RBTreeIterator operator--(int) const noexcept {
+        RBTreeIterator temp = *this;
         --*this;
         return temp;
     }
-
 };
 
 struct TreeRoot {
-    TreeNode* m_node;
+    RBTreeNode* m_node;
     TreeRoot() noexcept : m_node(nullptr) {};
 };
 
@@ -132,10 +159,10 @@ struct TreeBase {
 protected:
     TreeRoot *m_block;
 public:
-    using iterator = TreeIterator<T, false>;
-    using reverse_iterator = TreeIterator<T, true>;
-    using const_iterator = TreeIterator<T const, false>;
-    using const_reverse_iterator = TreeIterator<T const, true>;
+    using iterator = RBTreeIterator<T, false>;
+    using reverse_iterator = RBTreeIterator<T, true>;
+    using const_iterator = RBTreeIterator<T const, false>;
+    using const_reverse_iterator = RBTreeIterator<T const, true>;
 
     TreeBase() noexcept : m_block(new TreeRoot) {};
 
@@ -149,8 +176,8 @@ public:
     }
 
 protected:
-    [[nodiscard]] TreeNode* M_find(int val) const noexcept {
-        TreeNode* curr = m_block->m_node;
+    [[nodiscard]] RBTreeNode* M_find(int val) const noexcept {
+        RBTreeNode* curr = m_block->m_node;
         while (curr != nullptr) {
             if (curr->val < val) {
                 curr = curr->right;
@@ -164,8 +191,8 @@ protected:
         return nullptr;
     }
 
-    [[nodiscard]] TreeNode* Min_Node() const noexcept {
-        TreeNode* curr = m_block->m_node;
+    [[nodiscard]] RBTreeNode* Min_Node() const noexcept {
+        RBTreeNode* curr = m_block->m_node;
         if (curr != nullptr) {
             while (curr->left != nullptr) {
                 curr = curr->left;
@@ -174,8 +201,8 @@ protected:
         return curr;
     }
 
-    [[nodiscard]] TreeNode* Max_Node() const noexcept {
-        TreeNode* curr = m_block->m_node;
+    [[nodiscard]] RBTreeNode* Max_Node() const noexcept {
+        RBTreeNode* curr = m_block->m_node;
         if (curr != nullptr) {
             while (curr->right != nullptr) {
                 curr = curr->right;
@@ -184,8 +211,8 @@ protected:
         return curr;
     }
 
-    static void M_rotate_right(TreeNode* target) noexcept {
-        TreeNode *left = target->left;
+    static void M_rotate_right(RBTreeNode* target) noexcept {
+        RBTreeNode *left = target->left;
         target->right = left->right;
         if (left->right != nullptr) {
             left->right->parent = target;
@@ -199,9 +226,9 @@ protected:
         target->p_parent = &left->right;
     }
 
-    static void M_rotate_left(TreeNode* target) noexcept {
+    static void M_rotate_left(RBTreeNode* target) noexcept {
         // 获取 target 的右子节点
-        TreeNode *right = target->right;
+        RBTreeNode *right = target->right;
 
         // 将 target 的右子节点的左子节点连接到 target 的右子节点
         target->right = right->left;
@@ -225,23 +252,23 @@ protected:
         target->p_parent = &right->left; // 更新 target 的 p_parent
     }
 
-    static void M_fix_violation(TreeNode* target) noexcept {
+    static void M_fix_violation(RBTreeNode* target) noexcept {
         while (true) {
-            TreeNode* parent = target->parent;
+            RBTreeNode* parent = target->parent;
             if (parent == nullptr) {
                 target->color = BLACK;
                 return;
             }
             if (target->color == RED || parent->color == RED) return;
 
-            TreeNode *uncle, *grandpa = parent->parent;
+            RBTreeNode *uncle, *grandpa = parent->parent;
 
-            Direction parent_direction = parent == grandpa->left ? LEFT : RIGHT;
+            RBDirection parent_direction = parent == grandpa->left ? LEFT : RIGHT;
             if (parent_direction == LEFT) {
                 uncle = grandpa->right;
             } else uncle = grandpa->left;
 
-            Direction node_direction = target == parent->left ? LEFT : RIGHT;
+            RBDirection node_direction = target == parent->left ? LEFT : RIGHT;
             if (uncle->color == RED) {
                 // 1. uncle是红色节点
                 uncle->color = BLACK;
@@ -270,9 +297,9 @@ protected:
         }
     }
 
-    std::pair<iterator, bool> M_single_insert(int val) {
-        TreeNode** p_parent = &m_block->m_node;
-        TreeNode* parent = nullptr;
+    RBTreeNode* M_single_insert(int val) {
+        RBTreeNode** p_parent = &m_block->m_node;
+        RBTreeNode* parent = nullptr;
         while (*p_parent != nullptr) {
             parent = *p_parent;
             if (parent->val < val) {
@@ -282,9 +309,9 @@ protected:
                 p_parent  = &parent->left;
                 continue;
             }
-            return {parent, false}; // 找到了相同值的节点
+            return parent; // 找到了相同值的节点
         }
-        auto* new_node = new TreeNode;
+        auto* new_node = new RBTreeNode;
         new_node->val = val;
         new_node->right = nullptr;
         new_node->left = nullptr;
@@ -295,12 +322,12 @@ protected:
         *p_parent = new_node;
         TreeBase::M_fix_violation(new_node);
 
-        return {new_node, true};
+        return nullptr;
     }
 
     iterator M_multi_insert(int val) {
-        TreeNode** p_parent = &m_block->m_node;
-        TreeNode* parent = nullptr;
+        RBTreeNode** p_parent = &m_block->m_node;
+        RBTreeNode* parent = nullptr;
         while (*p_parent != nullptr) {
             parent = *p_parent;
             if (parent->val < val) {
@@ -311,7 +338,7 @@ protected:
                 continue;
             }
         }
-        auto* new_node = new TreeNode;
+        auto* new_node = new RBTreeNode;
         new_node->val = val;
         new_node->right = nullptr;
         new_node->left = nullptr;
@@ -353,19 +380,19 @@ public:
     }
 
     iterator _M_find(int val) noexcept {
-        TreeNode *res = M_find(val);
+        RBTreeNode *res = M_find(val);
         if (res) return m_block->m_node;
         else return end();
     }
 
     const_iterator _M_find(int val) const noexcept {
-        TreeNode *res = M_find(val);
+        RBTreeNode *res = M_find(val);
         if (res) return m_block->m_node;
         else return end();
     }
 
     std::pair<iterator, bool> single_insert(int val) {
-        return M_single_insert(val);
+        return {M_single_insert(val), true};
     }
 
     iterator multi_insert(int val) {
